@@ -7,23 +7,29 @@ import * as path from 'path';
 import { ContextGenerator } from '../core/contextGenerator';
 import { Scope, OutputTarget } from '../config/constants';
 import { OutputPicker } from '../ui/outputPicker';
+import { Logger } from '../core/logger';
 
 export async function generateWorkspace(context: vscode.ExtensionContext): Promise<void> {
+  Logger.info('Command invoked: generateWorkspace');
   await generateContext(context, { scope: 'workspace' });
 }
 
 export async function generateFolder(context: vscode.ExtensionContext): Promise<void> {
+  Logger.info('Command invoked: generateFolder');
   await generateContext(context, { scope: 'folder' });
 }
 
 export async function generateSelected(context: vscode.ExtensionContext): Promise<void> {
+  Logger.info('Command invoked: generateSelected');
   const selectedPaths = await getSelectedPaths();
 
   if (!selectedPaths || selectedPaths.length === 0) {
+    Logger.warn('No files selected for generation');
     vscode.window.showWarningMessage('No files selected');
     return;
   }
 
+  Logger.debug('Selected paths:', selectedPaths);
   await generateContext(context, { scope: 'selected', selectedPaths });
 }
 
@@ -31,11 +37,17 @@ async function generateContext(
   context: vscode.ExtensionContext,
   options: { scope: Scope; selectedPaths?: string[] }
 ): Promise<void> {
+  const startTime = Date.now();
+  Logger.info(`Starting generation with scope: ${options.scope}`);
+
   const workspaceRoot = getWorkspaceRoot();
   if (!workspaceRoot) {
+    Logger.error('No workspace folder found');
     vscode.window.showErrorMessage('No workspace folder found');
     return;
   }
+
+  Logger.debug('Workspace root:', workspaceRoot);
 
   await vscode.window.withProgress(
     {
@@ -46,19 +58,28 @@ async function generateContext(
     async progress => {
       try {
         progress.report({ message: 'Initializing...' });
+        Logger.debug('Creating ContextGenerator...');
 
         const generator = new ContextGenerator(workspaceRoot);
         generator.reloadFromSettings();
+        Logger.debug('ContextGenerator initialized and settings loaded');
 
         const outputTarget = await OutputPicker.show();
-        if (!outputTarget) return;
+        if (!outputTarget) {
+          Logger.info('Generation cancelled by user (no output target selected)');
+          return;
+        }
 
+        Logger.info(`Output target: ${outputTarget}`);
         progress.report({ message: 'Scanning files...' });
 
         const result = await generator.generate({
           scope: options.scope,
           selectedPaths: options.selectedPaths,
         });
+
+        Logger.logScanComplete(result.fileCount, Date.now() - startTime);
+        Logger.logTokenCount(result.tokenCount, generator.getMaxTokens());
 
         progress.report({ message: 'Outputting...' });
 
@@ -70,7 +91,9 @@ async function generateContext(
         await context.globalState.update('lastOutputTarget', outputTarget);
 
         generator.dispose();
+        Logger.info('Generation completed successfully');
       } catch (error: unknown) {
+        Logger.logError('generateContext', error);
         const message = error instanceof Error ? error.message : String(error);
         vscode.window.showErrorMessage(`Failed to generate: ${message}`);
       }
@@ -79,6 +102,7 @@ async function generateContext(
 }
 
 async function outputResult(content: string, target: OutputTarget, workspaceRoot: string): Promise<void> {
+  Logger.debug(`Outputting to target: ${target}, content length: ${content.length} chars`);
   switch (target) {
     case 'clipboard':
       await OutputPicker.copyToClipboard(content);

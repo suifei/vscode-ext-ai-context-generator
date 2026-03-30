@@ -11,6 +11,7 @@ import { FileReader, FileReadResult } from './fileReader';
 import { TokenCounter } from './tokenCounter';
 import { TemplateRenderer, TemplateVariables } from './templateRenderer';
 import { SmartSummarizer } from './smartSummarizer';
+import { Logger } from './logger';
 import { AIContextConfig, DEFAULT_CONFIG, Scope, OutputTarget } from '../config/constants';
 import { getRelativePath } from '../utils/fileUtils';
 
@@ -70,36 +71,49 @@ export class ContextGenerator {
   }
 
   async generate(options: GenerationOptions): Promise<GenerationResult> {
+    Logger.logScanStart(options.scope);
+    Logger.debug('Generation options:', options);
+
     // Step 1: Scan for files
+    Logger.debug('Step 1: Scanning files...');
     const scanResult = await this.fileScanner.scan({
       scope: options.scope,
       selectedPaths: options.selectedPaths,
     });
 
     const files = this.fileScanner.sortFiles(scanResult.files);
+    Logger.debug(`Scan complete: ${files.length} files found (${scanResult.skipped} skipped)`);
 
     if (files.length === 0) {
+      Logger.warn('No files found after scanning');
       return this.emptyResult();
     }
 
     // Step 2: Read file contents
+    Logger.debug('Step 2: Reading file contents...');
     const fileResults = await this.fileReader.readFiles(files);
+    Logger.debug(`File reading complete: ${fileResults.length} files processed`);
 
     // Step 3: Generate directory tree
+    Logger.debug('Step 3: Generating directory tree...');
     const dirTree = new DirTreeGenerator(this.workspaceRoot, {
       showEmoji: this.config.showTreeEmoji,
       selectedFiles: new Set(files),
     }).generate(files);
 
     // Step 4: Process files
+    Logger.debug('Step 4: Processing files (summaries/outlines)...');
     const processedContents = await this.processFiles(fileResults);
     const fileContents = processedContents.join('\n\n');
 
     // Step 5: Calculate tokens
+    Logger.debug('Step 5: Calculating tokens...');
     const tempContent = this.buildTemporaryContent(dirTree, fileContents);
     const tokenCount = this.tokenCounter.count(tempContent);
+    Logger.debug(`Token count: ${tokenCount} (limit: ${this.config.maxTokens})`);
 
     // Step 6: Render template
+    Logger.debug('Step 6: Rendering template...');
     const outlineCount = fileResults.filter(r => r.isTruncated).length;
     const content = this.renderTemplate(options.templateName, {
       dirTree,
@@ -110,6 +124,8 @@ export class ContextGenerator {
       selectedPaths: options.selectedPaths,
       scope: options.scope,
     });
+
+    Logger.info(`Generation complete: ${files.length} files, ${tokenCount} tokens, ${outlineCount} outlines`);
 
     return {
       content,
@@ -221,7 +237,12 @@ export class ContextGenerator {
     return this.workspaceRoot;
   }
 
+  getMaxTokens(): number {
+    return this.config.maxTokens;
+  }
+
   dispose(): void {
+    Logger.debug('ContextGenerator disposed');
     this.tokenCounter.dispose();
   }
 }

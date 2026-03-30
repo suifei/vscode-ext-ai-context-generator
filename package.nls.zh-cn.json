@@ -6,6 +6,7 @@
   "command.generateSelected.title": "为选中文件生成 AI 上下文",
   "command.configure.title": "配置 AI 上下文生成器",
   "command.openSidebar.title": "打开 AI 上下文侧边栏",
+  "command.openLogs.title": "打开 AI 上下文生成器日志",
   "command.category": "AI 上下文生成器",
   "viewsContainers.title": "AI 上下文",
   "view.name": "上下文生成器",
@@ -25,9 +26,14 @@
   "configuration.showTreeEmoji.description": "在目录树中的选中文件上显示 emoji 标记",
   "configuration.tokenEstimation.description": "Token 计数方法：tiktoken（精确）或 simple（轻量）",
   "configuration.parallelFileReads.description": "并行文件读取操作的最大数量",
+  "configuration.logLevel.description": "输出通道的日志级别（debug、info、warn、error）",
   "enum.clipboard": "剪贴板",
   "enum.file": "文件",
   "enum.preview": "预览",
   "enum.tiktoken": "tiktoken",
-  "enum.simple": "简单估算"
+  "enum.simple": "简单估算",
+  "enum.debug": "调试 - 详细诊断信息",
+  "enum.info": "信息 - 一般信息消息",
+  "enum.warn": "警告 - 警告消息",
+  "enum.error": "错误 - 仅错误消息"
 }

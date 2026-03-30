@@ -6,6 +6,7 @@
   "command.generateSelected.title": "Generate AI Context for Selected Files",
   "command.configure.title": "Configure AI Context Generator",
   "command.openSidebar.title": "Open AI Context Sidebar",
+  "command.openLogs.title": "Open AI Context Generator Logs",
   "command.category": "AI Context Generator",
   "viewsContainers.title": "AI Context",
   "view.name": "Context Generator",
@@ -25,9 +26,14 @@
   "configuration.showTreeEmoji.description": "Show emoji markers on selected files in directory tree",
   "configuration.tokenEstimation.description": "Token counting method: tiktoken (accurate) or simple (lightweight)",
   "configuration.parallelFileReads.description": "Maximum number of parallel file read operations",
+  "configuration.logLevel.description": "Log level for output channel (debug, info, warn, error)",
   "enum.clipboard": "Clipboard",
   "enum.file": "File",
   "enum.preview": "Preview",
   "enum.tiktoken": "tiktoken",
-  "enum.simple": "simple"
+  "enum.simple": "simple",
+  "enum.debug": "Debug - Detailed diagnostic information",
+  "enum.info": "Info - General informational messages",
+  "enum.warn": "Warning - Warning messages",
+  "enum.error": "Error - Error messages only"
 }

@@ -6,11 +6,29 @@
 import * as vscode from 'vscode';
 import { SidebarProvider } from './ui/sidebarProvider';
 import { OutlineExtractorRegistry } from './outline/registry';
+import { Logger, LogLevel } from './core/logger';
 import { generateWorkspace, generateFolder, generateSelected } from './commands/workspaceCommand';
 import { configureSettings } from './commands/configureCommand';
 
 export function activate(context: vscode.ExtensionContext): void {
-  console.log('AI Context Generator is now active');
+  // Initialize logger
+  Logger.initialize();
+
+  // Get log level from config
+  const config = vscode.workspace.getConfiguration('aiContext');
+  const logLevelConfig = config.get<string>('logLevel', 'info');
+
+  const levelMap: Record<string, LogLevel> = {
+    debug: LogLevel.DEBUG,
+    info: LogLevel.INFO,
+    warn: LogLevel.WARN,
+    error: LogLevel.ERROR,
+  };
+  Logger.setLevel(levelMap[logLevelConfig] ?? LogLevel.INFO);
+
+  Logger.info('AI Context Generator is now active');
+  Logger.debug('Extension path:', context.extensionUri.fsPath);
+  Logger.debug('Log level:', logLevelConfig);
 
   // Initialize outline extractor registry
   OutlineExtractorRegistry.initialize();
@@ -50,6 +68,11 @@ export function activate(context: vscode.ExtensionContext): void {
     () => vscode.commands.executeCommand('aiContextSidebarView.focus')
   );
 
+  const openLogsCommand = vscode.commands.registerCommand(
+    'aiContext.openLogs',
+    () => Logger.show()
+  );
+
   // Register all disposables
   context.subscriptions.push(
     sidebarViewRegistration,
@@ -57,7 +80,8 @@ export function activate(context: vscode.ExtensionContext): void {
     folderCommand,
     selectedCommand,
     configureCommand,
-    openSidebarCommand
+    openSidebarCommand,
+    openLogsCommand
   );
 
   // Show welcome message on first activation
@@ -89,5 +113,6 @@ async function showWelcomeMessage(context: vscode.ExtensionContext): Promise<voi
  * Deactivate extension
  */
 export function deactivate(): void {
-  console.log('AI Context Generator deactivated');
+  Logger.info('AI Context Generator deactivated');
+  Logger.dispose();
 }
