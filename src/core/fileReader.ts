@@ -7,6 +7,7 @@ import * as path from 'path';
 import { getLanguageFromPath } from '../utils/languageMapper';
 import { formatFileSize, getRelativePath } from '../utils/fileUtils';
 import { Logger } from './logger';
+import { BinaryMetadataExtractor } from './binaryMetadataExtractor';
 import { AIContextConfig, BINARY_EMOJI, WARNING_EMOJI } from '../config/constants';
 
 export interface FileReadResult {
@@ -23,15 +24,29 @@ export interface BinaryMetadata {
   type: string;
   format?: string;
   description: string;
+  // 增强元数据字段
+  fileSize?: number;      // 文件大小（字节）
+  dimensions?: string;     // 图像尺寸 "1920x1080" 或视频
+  duration?: string;       // 音频/视频时长 "3:45" 或秒数
+  bitrate?: string;        // 比特率 "320kbps"
+  sampleRate?: string;     // 采样率 "44.1kHz"
+  channels?: number;       // 声道数
+  mime?: string;           // MIME 类型
+  hasAlpha?: boolean;      // 是否有透明通道（图片）
+  colorDepth?: string;     // 颜色深度 "8-bit", "24-bit", "32-bit"
+  compression?: string;    // 压缩格式（用于压缩包）
+  entryCount?: number;     // 文件数量（用于压缩包）
 }
 
 export class FileReader {
   private config: AIContextConfig;
   private workspaceRoot: string;
+  private readonly metadataExtractor: BinaryMetadataExtractor;
 
   constructor(config: AIContextConfig, workspaceRoot: string) {
     this.config = config;
     this.workspaceRoot = workspaceRoot;
+    this.metadataExtractor = new BinaryMetadataExtractor(workspaceRoot);
   }
 
   /**
@@ -157,25 +172,7 @@ export class FileReader {
    * Extract metadata from binary files
    */
   private extractBinaryMetadata(filePath: string): BinaryMetadata {
-    const ext = path.extname(filePath).toLowerCase();
-    const basename = path.basename(filePath);
-
-    const types: Record<string, string> = {
-      '.png': 'image', '.jpg': 'image', '.jpeg': 'image', '.gif': 'image',
-      '.webp': 'image', '.bmp': 'image', '.ico': 'image', '.svg': 'image',
-      '.mp3': 'audio', '.wav': 'audio', '.ogg': 'audio', '.flac': 'audio', '.aac': 'audio',
-      '.mp4': 'video', '.avi': 'video', '.mov': 'video', '.mkv': 'video', '.webm': 'video',
-      '.zip': 'archive', '.tar': 'archive', '.gz': 'archive', '.rar': 'archive', '.7z': 'archive',
-      '.ttf': 'font', '.otf': 'font', '.woff': 'font', '.woff2': 'font', '.eot': 'font',
-    };
-
-    const type = types[ext] || 'binary';
-
-    return {
-      type,
-      format: ext.substring(1).toUpperCase(),
-      description: `${BINARY_EMOJI} ${type} file: ${basename}`,
-    };
+    return this.metadataExtractor.extract(filePath);
   }
 
   /**
@@ -186,7 +183,7 @@ export class FileReader {
     const language = result.language || 'text';
 
     if (result.isBinary && result.metadata) {
-      return `// ${result.metadata.description}\n// Type: ${result.metadata.type}\n`;
+      return this.formatBinaryMetadata(relativePath, result.metadata);
     }
 
     let output = `// File: ${relativePath}`;
@@ -198,6 +195,38 @@ export class FileReader {
 
     output += `\`\`\`${language}\n${result.content}\n\`\`\n`;
 
+    return output;
+  }
+
+  /**
+   * Format binary metadata for output
+   */
+  private formatBinaryMetadata(relativePath: string, meta: BinaryMetadata): string {
+    let output = `// ${meta.description}\n`;
+    output += `// Type: ${meta.type}`;
+
+    if (meta.format) {
+      output += ` (${meta.format})`;
+    }
+
+    // Build details array
+    const details: string[] = [];
+    if (meta.dimensions) details.push(`Size: ${meta.dimensions}`);
+    if (meta.duration) details.push(`Duration: ${meta.duration}`);
+    if (meta.bitrate) details.push(`Bitrate: ${meta.bitrate}`);
+    if (meta.sampleRate) details.push(`Sample Rate: ${meta.sampleRate}`);
+    if (meta.channels !== undefined) details.push(`Channels: ${meta.channels}`);
+    if (meta.colorDepth) details.push(`Depth: ${meta.colorDepth}`);
+    if (meta.hasAlpha !== undefined) details.push(`Alpha: ${meta.hasAlpha ? 'Yes' : 'No'}`);
+    if (meta.compression) details.push(`Compression: ${meta.compression}`);
+    if (meta.entryCount !== undefined) details.push(`Entries: ${meta.entryCount}`);
+    if (meta.mime) details.push(`MIME: ${meta.mime}`);
+
+    if (details.length > 0) {
+      output += `\n// Details: ${details.join(', ')}`;
+    }
+
+    output += '\n';
     return output;
   }
 }

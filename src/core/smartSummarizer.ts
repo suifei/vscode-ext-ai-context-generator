@@ -11,6 +11,19 @@ import { ConfigAnalyzer } from '../summary/configAnalyzer';
 import { DocAnalyzer } from '../summary/docAnalyzer';
 import { GenericAnalyzer } from '../summary/genericAnalyzer';
 
+// Extension groups for summarization
+const LOG_EXTENSIONS = ['.log'];
+const CSV_EXTENSIONS = ['.csv', '.tsv'];
+const CONFIG_EXTENSIONS = ['.json', '.yaml', '.yml', '.xml'];
+const DOC_EXTENSIONS = ['.md', '.txt'];
+
+const SUMMARY_EXTENSIONS = new Set([
+  ...LOG_EXTENSIONS,
+  ...CSV_EXTENSIONS,
+  ...CONFIG_EXTENSIONS,
+  ...DOC_EXTENSIONS,
+]);
+
 export class SmartSummarizer {
   private logAnalyzer: LogAnalyzer;
   private csvAnalyzer: CsvAnalyzer;
@@ -28,30 +41,24 @@ export class SmartSummarizer {
 
   shouldSummarize(filePath: string): boolean {
     const ext = path.extname(filePath).toLowerCase();
-    const summaryExtensions = new Set([
-      '.log', '.csv', '.tsv', '.json', '.yaml', '.yml', '.xml', '.md', '.txt',
-    ]);
-    return summaryExtensions.has(ext);
+    return SUMMARY_EXTENSIONS.has(ext);
   }
 
   async summarize(fileResult: FileReadResult): Promise<string> {
     const ext = path.extname(fileResult.path).toLowerCase();
 
-    switch (ext) {
-      case '.log':
-        return this.logAnalyzer.summarize(fileResult);
-      case '.csv':
-      case '.tsv':
-        return this.csvAnalyzer.summarize(fileResult);
-      case '.json':
-      case '.yaml':
-      case '.yml':
-      case '.xml':
-        return this.configAnalyzer.summarize(fileResult);
-      case '.md':
-        return this.docAnalyzer.summarize(fileResult);
-      default:
-        return this.genericAnalyzer.summarize(fileResult);
+    if (LOG_EXTENSIONS.includes(ext)) {
+      return this.logAnalyzer.summarize(fileResult);
     }
+    if (CSV_EXTENSIONS.includes(ext)) {
+      return this.csvAnalyzer.summarize(fileResult);
+    }
+    if (CONFIG_EXTENSIONS.includes(ext)) {
+      return this.configAnalyzer.summarize(fileResult);
+    }
+    if (DOC_EXTENSIONS.includes(ext)) {
+      return this.docAnalyzer.summarize(fileResult);
+    }
+    return this.genericAnalyzer.summarize(fileResult);
   }
 }

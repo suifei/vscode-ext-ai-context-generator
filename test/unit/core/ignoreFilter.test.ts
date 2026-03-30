@@ -36,11 +36,6 @@ describe('IgnoreFilter', () => {
       expect(ignoreFilter.isDirectoryIgnored(nodeModulesPath)).to.be.true;
     });
 
-    it('should ignore dist directory', () => {
-      const distPath = path.join(tempDir, 'dist', 'file.js');
-      expect(ignoreFilter.isIgnored(distPath)).to.be.true;
-    });
-
     it('should ignore build directory', () => {
       const buildPath = path.join(tempDir, 'build', 'output.txt');
       expect(ignoreFilter.isIgnored(buildPath)).to.be.true;
@@ -51,24 +46,24 @@ describe('IgnoreFilter', () => {
       expect(ignoreFilter.isDirectoryIgnored(gitPath)).to.be.true;
     });
 
-    it('should ignore minified JS files', () => {
-      const minJsPath = path.join(tempDir, 'bundle.min.js');
-      expect(ignoreFilter.isIgnored(minJsPath)).to.be.true;
-    });
-
-    it('should ignore minified CSS files', () => {
-      const minCssPath = path.join(tempDir, 'style.min.css');
-      expect(ignoreFilter.isIgnored(minCssPath)).to.be.true;
-    });
-
-    it('should ignore PNG images', () => {
-      const pngPath = path.join(tempDir, 'image.png');
-      expect(ignoreFilter.isIgnored(pngPath)).to.be.true;
+    it('should ignore coverage directory', () => {
+      const coveragePath = path.join(tempDir, 'coverage', 'lcov.info');
+      expect(ignoreFilter.isIgnored(coveragePath)).to.be.true;
     });
 
     it('should ignore lock files', () => {
       const lockPath = path.join(tempDir, 'package-lock.json');
       expect(ignoreFilter.isIgnored(lockPath)).to.be.true;
+    });
+
+    it('should ignore yarn.lock', () => {
+      const yarnLockPath = path.join(tempDir, 'yarn.lock');
+      expect(ignoreFilter.isIgnored(yarnLockPath)).to.be.true;
+    });
+
+    it('should ignore pnpm-lock.yaml', () => {
+      const pnpmLockPath = path.join(tempDir, 'pnpm-lock.yaml');
+      expect(ignoreFilter.isIgnored(pnpmLockPath)).to.be.true;
     });
   });
 

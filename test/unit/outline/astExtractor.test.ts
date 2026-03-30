@@ -3,8 +3,8 @@
  */
 
 import { expect } from 'chai';
-import { ASTExtractor } from '../../../../src/outline/astExtractor';
-import { extractCodeSignature } from '../../../../src/outline/formatConstants';
+import { ASTExtractor } from '../../../src/outline/astExtractor';
+import { extractCodeSignature } from '../../../src/outline/formatConstants';
 import * as vscode from 'vscode';
 
 describe('ASTExtractor', () => {

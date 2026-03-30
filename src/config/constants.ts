@@ -65,4 +65,43 @@ export const WARNING_EMOJI = '⚠️';
 export const BINARY_EMOJI = '🖼️';
 
 export type OutputTarget = 'clipboard' | 'file' | 'preview';
-export type Scope = 'workspace' | 'folder' | 'selected';
+
+/**
+ * Shared formatting constants
+ */
+
+/** Section separator for formatted output */
+export const SECTION_SEPARATOR = '// ═══════════════════════════════════════';
+
+/** Outline section titles */
+export const SECTION_TITLES = {
+  TYPES: 'TYPES',
+  TYPES_WITH_COUNT: (count: number) => `TYPES & INTERFACES (${count})`,
+  FUNCTIONS: 'FUNCTIONS',
+  FUNCTIONS_WITH_COUNT: (count: number) => `FUNCTIONS & METHODS (${count})`,
+  IMPORTS: 'IMPORTS/DEPENDENCIES',
+  IMPORTS_WITH_COUNT: (count: number) => `IMPORTS/DEPENDENCIES (${count})`,
+} as const;
+
+/**
+ * Format utilities
+ */
+
+/** Truncate text to maximum length */
+export function truncateText(text: string, maxLength: number): string {
+  return text.substring(0, maxLength);
+}
+
+/** Extract code signature from line (removes comments and trailing brace) */
+export function extractCodeSignature(line: string): string {
+  // Remove leading comments
+  line = line.replace(/^\/\/\s*/, '');
+  // Extract up to opening brace or end
+  const match = line.match(/^([^{]*?)(?:\s*\{)?$/);
+  return match ? match[1].trim() : line.substring(0, 80);
+}
+
+/** Format a section header with separator */
+export function formatSectionHeader(title: string): string {
+  return `${SECTION_SEPARATOR}\n// ${title}\n${SECTION_SEPARATOR}`;
+}

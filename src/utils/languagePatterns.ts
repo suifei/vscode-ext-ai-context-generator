@@ -69,8 +69,34 @@ export function getPatterns(languageId: string): LanguagePatterns {
 }
 
 /**
- * Get all supported language IDs
+ * Extract lines matching any of the given patterns
+ * @param lines Lines to search through
+ * @param patterns RegExp patterns to match
+ * @param limit Maximum number of results (default: Infinity)
+ * @param skipPrefix Optional prefix to skip (e.g., '//' for comments)
+ * @returns Array of matching lines (trimmed)
  */
-export function getSupportedLanguages(): string[] {
-  return Object.keys(PATTERNS);
+export function extractMatchingLines(
+  lines: string[],
+  patterns: RegExp[],
+  limit = Infinity,
+  skipPrefix?: string
+): string[] {
+  const results: string[] = [];
+
+  for (const line of lines) {
+    if (results.length >= limit) break;
+
+    const trimmed = line.trim();
+    if (skipPrefix && trimmed.startsWith(skipPrefix)) continue;
+
+    for (const pattern of patterns) {
+      if (pattern.test(trimmed)) {
+        results.push(trimmed);
+        break;
+      }
+    }
+  }
+
+  return results;
 }

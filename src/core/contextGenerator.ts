@@ -13,12 +13,15 @@ import { TokenCounter } from './tokenCounter';
 import { TemplateRenderer, TemplateVariables } from './templateRenderer';
 import { SmartSummarizer } from './smartSummarizer';
 import { Logger } from './logger';
-import { AIContextConfig, DEFAULT_CONFIG, Scope, OutputTarget, WARNING_EMOJI } from '../config/constants';
+import { AIContextConfig, DEFAULT_CONFIG, OutputTarget, WARNING_EMOJI } from '../config/constants';
 import { getRelativePath, formatFileSize } from '../utils/fileUtils';
-import { OutlineExtractorRegistry } from '../outline/registry';
+import { OutlineExtractorRegistry, OutlineOptions } from '../outline/registry';
 
 export interface GenerationOptions {
-  scope: Scope;
+  /**
+   * Paths to include in the context.
+   * If empty, the entire workspace is scanned.
+   */
   selectedPaths?: string[];
   templateName?: string;
   outputTarget?: OutputTarget;
@@ -31,27 +34,6 @@ export interface GenerationResult {
   outlineCount: number;
   exceededLimit: boolean;
 }
-
-const SETTINGS_KEYS: Record<keyof AIContextConfig, string> = {
-  maxFileSize: 'number',
-  maxTokens: 'number',
-  textPreviewLength: 'number',
-  logSampleLines: 'number',
-  csvSampleRows: 'number',
-  defaultTemplate: 'string',
-  sensitiveKeyPatterns: 'array',
-  autoDetectLanguage: 'boolean',
-  ignorePatterns: 'array',
-  binaryFilePatterns: 'array',
-  outputFileName: 'string',
-  showTreeEmoji: 'boolean',
-  tokenEstimation: 'string',
-  parallelFileReads: 'number',
-  outlineDetail: 'string',
-  outlineIncludePrivate: 'boolean',
-  outlineExtractComments: 'boolean',
-  outlineMaxItems: 'number',
-};
 
 export class ContextGenerator {
   private ignoreFilter: IgnoreFilter;
@@ -75,15 +57,17 @@ export class ContextGenerator {
     this.smartSummarizer = new SmartSummarizer(this.config, workspaceRoot);
   }
 
+  /** Get all config keys for dynamic loading */
+  private static readonly CONFIG_KEYS = Object.keys(DEFAULT_CONFIG) as Array<keyof AIContextConfig>;
+
   async generate(options: GenerationOptions): Promise<GenerationResult> {
-    Logger.logScanStart(options.scope);
+    Logger.logScanStart(options.selectedPaths?.length ? 'selected' : 'workspace');
     Logger.debug('Generation options:', options);
 
     // Step 1: Scan for files
     Logger.debug('Step 1: Scanning files...');
     const scanResult = await this.fileScanner.scan({
-      scope: options.scope,
-      selectedPaths: options.selectedPaths,
+      paths: options.selectedPaths,
     });
 
     const files = this.fileScanner.sortFiles(scanResult.files);
@@ -131,7 +115,6 @@ export class ContextGenerator {
       tokenCount,
       outlineCount,
       selectedPaths: options.selectedPaths,
-      scope: options.scope,
       treeRoot,
     });
 
@@ -204,7 +187,14 @@ export class ContextGenerator {
     const document = await vscode.workspace.openTextDocument(uri);
 
     try {
-      const outline = await OutlineExtractorRegistry.extractOutline(document);
+      const options: OutlineOptions = {
+        detail: this.config.outlineDetail,
+        includePrivate: this.config.outlineIncludePrivate,
+        extractComments: this.config.outlineExtractComments,
+        maxItems: this.config.outlineMaxItems,
+      };
+
+      const outline = await OutlineExtractorRegistry.extractOutline(document, options);
       const relativePath = getRelativePath(this.workspaceRoot, result.path);
       const fileSize = formatFileSize(result.size);
       const warning = `${WARNING_EMOJI} Overview — ${fileSize}, structure outline`;
@@ -229,7 +219,6 @@ export class ContextGenerator {
       tokenCount: number;
       outlineCount: number;
       selectedPaths?: string[];
-      scope: Scope;
       treeRoot: string;
     }
   ): string {
@@ -250,7 +239,7 @@ export class ContextGenerator {
       SELECTED_FILES: data.selectedPaths
         ? data.selectedPaths.map(p => getRelativePath(data.treeRoot, p)).join(', ')
         : '',
-      SCOPE: data.scope,
+      SCOPE: data.selectedPaths?.length ? 'selected' : 'workspace',
       WORKSPACE_PATH: this.workspaceRoot,
     };
 
@@ -303,12 +292,7 @@ export class ContextGenerator {
   updateConfig(config: Partial<AIContextConfig>): void {
     this.config = { ...this.config, ...config };
     this.ignoreFilter.reload(this.config.ignorePatterns, this.config.binaryFilePatterns);
-    // Update components that depend on config
-    this.fileReader = new FileReader(this.config, this.workspaceRoot);
-    this.smartSummarizer = new SmartSummarizer(this.config, this.workspaceRoot);
-    if (config.tokenEstimation !== undefined) {
-      this.tokenCounter = new TokenCounter(this.config.tokenEstimation);
-    }
+    this.refreshDependents();
   }
 
   reloadFromSettings(): void {
@@ -316,7 +300,13 @@ export class ContextGenerator {
     const config = this.loadConfigFromSettings(vscodeConfig);
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.ignoreFilter.reload(this.config.ignorePatterns, this.config.binaryFilePatterns);
-    // Update components that depend on config
+    this.refreshDependents();
+  }
+
+  /**
+   * Refresh components that depend on config
+   */
+  private refreshDependents(): void {
     this.fileReader = new FileReader(this.config, this.workspaceRoot);
     this.smartSummarizer = new SmartSummarizer(this.config, this.workspaceRoot);
     this.tokenCounter = new TokenCounter(this.config.tokenEstimation);
@@ -324,13 +314,11 @@ export class ContextGenerator {
 
   private loadConfigFromSettings(vscodeConfig: vscode.WorkspaceConfiguration): Partial<AIContextConfig> {
     const result: Partial<AIContextConfig> = {};
-    const configKeys = SETTINGS_KEYS as Record<keyof AIContextConfig, string>;
 
-    for (const key of Object.keys(configKeys)) {
-      const typedKey = key as keyof AIContextConfig;
-      const defaultValue = DEFAULT_CONFIG[typedKey];
+    for (const key of ContextGenerator.CONFIG_KEYS) {
+      const defaultValue = DEFAULT_CONFIG[key];
       const value = vscodeConfig.get(key, defaultValue);
-      (result as Partial<AIContextConfig>)[typedKey] = value as never;
+      result[key] = value as never;
     }
 
     return result;
@@ -340,17 +328,12 @@ export class ContextGenerator {
     return this.templateRenderer.getAvailableTemplates();
   }
 
-  getWorkspaceRoot(): string {
-    return this.workspaceRoot;
-  }
-
   getMaxTokens(): number {
     return this.config.maxTokens;
   }
 
   dispose(): void {
     Logger.debug('ContextGenerator disposed');
-    this.tokenCounter.dispose();
   }
 }
 

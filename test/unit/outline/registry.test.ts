@@ -3,7 +3,7 @@
  */
 
 import { expect } from 'chai';
-import { OutlineExtractorRegistry } from '../../../../src/outline/registry';
+import { OutlineExtractorRegistry } from '../../../src/outline/registry';
 import * as vscode from 'vscode';
 
 describe('OutlineExtractorRegistry', () => {

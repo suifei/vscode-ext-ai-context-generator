@@ -5,3 +5,6 @@ recursive: true
 reporter: spec
 extension:
   - '.test.js'
+# Add test/mocks to module resolution path
+node-env:
+  NODE_ENV: 'test'

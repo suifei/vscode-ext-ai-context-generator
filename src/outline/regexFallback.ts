@@ -11,9 +11,15 @@ import {
   SECTION_TITLES,
   truncateText,
 } from './formatConstants';
+import type { OutlineOptions } from './registry';
 
 export class RegexFallback extends OutlineExtractor {
-  async extract(document: vscode.TextDocument): Promise<string> {
+  /**
+   * Extract outline using regex patterns
+   */
+  async extract(document: vscode.TextDocument, options?: OutlineOptions): Promise<string> {
+    this.options = this.mergeOptions(options);
+
     const content = document.getText();
     const lines = content.split('\n');
 
@@ -27,8 +33,26 @@ export class RegexFallback extends OutlineExtractor {
     for (const line of lines) {
       const trimmed = line.trim();
 
-      // Skip comments and empty lines
-      if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('#') || trimmed.startsWith('*')) {
+      // Skip empty lines
+      if (!trimmed) {
+        continue;
+      }
+
+      // Check for import patterns first (before skipping # lines)
+      for (const pattern of patterns.import) {
+        if (pattern.test(trimmed)) {
+          imports.push(truncateText(trimmed, 100));
+          break;
+        }
+      }
+
+      // Skip comments after import check
+      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+        continue;
+      }
+
+      // Skip preprocessor directives for C/C++ (except includes which were already caught)
+      if (trimmed.startsWith('#') && !trimmed.startsWith('#include')) {
         continue;
       }
 
@@ -47,59 +71,86 @@ export class RegexFallback extends OutlineExtractor {
           break;
         }
       }
-
-      // Check for import patterns
-      for (const pattern of patterns.import) {
-        if (pattern.test(trimmed)) {
-          imports.push(truncateText(trimmed, 100));
-          break;
-        }
-      }
     }
+
+    // Filter private members if needed
+    let filteredTypes = types;
+    let filteredFunctions = functions;
+
+    if (!this.options.includePrivate) {
+      filteredTypes = types.filter(t => !this.isPrivateLine(t));
+      filteredFunctions = functions.filter(f => !this.isPrivateLine(f));
+    }
+
+    // Apply maxItems limit
+    const typesToShow = filteredTypes.slice(0, this.options.maxItems);
+    const functionsToShow = filteredFunctions.slice(0, this.options.maxItems);
+    const importsToShow = imports.slice(0, this.options.maxItems);
 
     const output: string[] = [];
 
     // Output types
-    if (types.length > 0) {
+    if (typesToShow.length > 0) {
       output.push(OUTLINE_SEPARATOR);
       output.push(`// ${SECTION_TITLES.TYPES}`);
       output.push(OUTLINE_SEPARATOR);
-      for (const type of types.slice(0, 20)) {
+      for (const type of typesToShow) {
         output.push(`// ${type}`);
       }
-      if (types.length > 20) {
-        output.push(`// ... (${types.length - 20} more types)`);
+      if (filteredTypes.length > this.options.maxItems) {
+        output.push(`// ... (${filteredTypes.length - this.options.maxItems} more types)`);
       }
       output.push('');
     }
 
     // Output functions
-    if (functions.length > 0) {
+    if (functionsToShow.length > 0) {
       output.push(OUTLINE_SEPARATOR);
       output.push(`// ${SECTION_TITLES.FUNCTIONS}`);
       output.push(OUTLINE_SEPARATOR);
-      for (const fn of functions.slice(0, 30)) {
+      for (const fn of functionsToShow) {
         output.push(`// ${fn}`);
       }
-      if (functions.length > 30) {
-        output.push(`// ... (${functions.length - 30} more functions)`);
+      if (filteredFunctions.length > this.options.maxItems) {
+        output.push(`// ... (${filteredFunctions.length - this.options.maxItems} more functions)`);
       }
       output.push('');
     }
 
     // Output imports
-    if (imports.length > 0) {
+    if (importsToShow.length > 0) {
       output.push(OUTLINE_SEPARATOR);
       output.push(`// ${SECTION_TITLES.IMPORTS}`);
       output.push(OUTLINE_SEPARATOR);
-      for (const imp of imports.slice(0, 15)) {
+      for (const imp of importsToShow) {
         output.push(`// ${imp}`);
       }
-      if (imports.length > 15) {
-        output.push(`// ... (${imports.length - 15} more imports)`);
+      if (imports.length > this.options.maxItems) {
+        output.push(`// ... (${imports.length - this.options.maxItems} more imports)`);
       }
     }
 
     return output.join('\n');
+  }
+
+  /**
+   * Check if a line represents a private member
+   */
+  private isPrivateLine(line: string): boolean {
+    const trimmed = line.trim();
+
+    // Check for explicit private keyword
+    if (trimmed.includes('private ')) return true;
+
+    // Check for # private fields (TypeScript/JavaScript private class fields)
+    if (trimmed.startsWith('#')) return true;
+
+    // Check for _ prefix (convention for private/protected)
+    // Look for function/method definitions with _ prefix
+    // Match: "def _method", "function _method", "_method(", etc.
+    const privatePattern = /^\s*(def|function|async\s+function|let|const|var)\s+_/;
+    if (privatePattern.test(trimmed)) return true;
+
+    return false;
   }
 }

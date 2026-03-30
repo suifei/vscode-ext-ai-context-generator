@@ -39,26 +39,33 @@ export class IgnoreFilter {
   }
 
   reload(additionalPatterns: string[] = [], binaryPatterns?: string[]): void {
-    if (binaryPatterns !== undefined) {
-      this.binaryPatterns.splice(0, this.binaryPatterns.length, ...binaryPatterns);
+    if (binaryPatterns) {
+      this.binaryPatterns.length = 0;
+      this.binaryPatterns.push(...binaryPatterns);
     }
     this.loadPatterns(additionalPatterns);
   }
 
   isIgnored(filePath: string): boolean {
-    const relativePath = path.relative(this.workspaceRoot, filePath);
-    const normalizedPath = relativePath.split(path.sep).join('/');
+    const normalizedPath = this.toNormalizedPath(filePath);
     return this.ignoreInstance.ignores(normalizedPath);
   }
 
   isDirectoryIgnored(dirPath: string): boolean {
-    const relativePath = path.relative(this.workspaceRoot, dirPath);
-    const normalizedPath = relativePath.split(path.sep).join('/');
+    const normalizedPath = this.toNormalizedPath(dirPath);
     return this.ignoreInstance.ignores(normalizedPath) ||
            this.ignoreInstance.ignores(normalizedPath + '/');
   }
 
   getWorkspaceRoot(): string {
     return this.workspaceRoot;
+  }
+
+  /**
+   * Convert file path to normalized format for ignore library
+   */
+  private toNormalizedPath(filePath: string): string {
+    const relativePath = path.relative(this.workspaceRoot, filePath);
+    return relativePath.split(path.sep).join('/');
   }
 }

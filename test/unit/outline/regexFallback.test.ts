@@ -3,7 +3,7 @@
  */
 
 import { expect } from 'chai';
-import { RegexFallback } from '../../../../src/outline/regexFallback';
+import { RegexFallback } from '../../../src/outline/regexFallback';
 import * as vscode from 'vscode';
 
 describe('RegexFallback', () => {
@@ -277,7 +277,8 @@ describe('RegexFallback', () => {
 
       const code = [...types, ...functions, ...imports].join('\n');
       const mockDoc = createMockDocument(code, 'typescript');
-      const result = await fallback.extract(mockDoc);
+      // Pass small maxItems to trigger limiting
+      const result = await fallback.extract(mockDoc, { maxItems: 10 });
 
       // Should show "more" indicators
       expect(result).to.include('more');

@@ -3,7 +3,7 @@
  */
 
 import { FileReadResult } from '../core/fileReader';
-import { AIContextConfig, WARNING_EMOJI } from '../config/constants';
+import { AIContextConfig, WARNING_EMOJI, SECTION_SEPARATOR } from '../config/constants';
 import { getRelativePath } from '../utils/fileUtils';
 
 export class DocAnalyzer {
@@ -112,9 +112,9 @@ export class DocAnalyzer {
     firstParagraph: string | null
   ): string {
     let output = `// File: ${relativePath} (${WARNING_EMOJI} Document outline)\n\n`;
-    output += `// ═══════════════════════════════════════\n`;
+    output += `${SECTION_SEPARATOR}\n`;
     output += `// DOCUMENT STRUCTURE\n`;
-    output += `// ═══════════════════════════════════════\n`;
+    output += `${SECTION_SEPARATOR}\n`;
     output += `// Lines: ${lines.length} | Headings: ${headings.length}\n\n`;
 
     if (headings.length > 0) {
@@ -129,9 +129,9 @@ export class DocAnalyzer {
     output += '\n';
 
     if (codeBlocks.length > 0) {
-      output += `// ═══════════════════════════════════════\n`;
+      output += `${SECTION_SEPARATOR}\n`;
       output += `// CODE BLOCKS (${codeBlocks.length})\n`;
-      output += `// ═══════════════════════════════════════\n`;
+      output += `${SECTION_SEPARATOR}\n`;
       for (const block of codeBlocks) {
         output += `// \`\`\`${block.lang} (${block.lines} lines)\n`;
       }
@@ -139,17 +139,17 @@ export class DocAnalyzer {
     }
 
     if (keywords.length > 0) {
-      output += `// ═══════════════════════════════════════\n`;
+      output += `${SECTION_SEPARATOR}\n`;
       output += `// KEY TERMS\n`;
-      output += `// ═══════════════════════════════════════\n`;
+      output += `${SECTION_SEPARATOR}\n`;
       output += `// ${keywords.join(', ')}\n`;
     }
 
     if (firstParagraph) {
       output += '\n';
-      output += `// ═══════════════════════════════════════\n`;
+      output += `${SECTION_SEPARATOR}\n`;
       output += `// OPENING PARAGRAPH\n`;
-      output += `// ═══════════════════════════════════════\n`;
+      output += `${SECTION_SEPARATOR}\n`;
       output += `// ${firstParagraph}\n`;
     }
 

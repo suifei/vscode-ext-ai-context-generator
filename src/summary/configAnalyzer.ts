@@ -4,7 +4,7 @@
 
 import * as path from 'path';
 import { FileReadResult } from '../core/fileReader';
-import { AIContextConfig, WARNING_EMOJI } from '../config/constants';
+import { AIContextConfig, WARNING_EMOJI, SECTION_SEPARATOR } from '../config/constants';
 import { getRelativePath } from '../utils/fileUtils';
 
 export class ConfigAnalyzer {
@@ -38,9 +38,9 @@ export class ConfigAnalyzer {
       return output;
     }
 
-    output += `// ═══════════════════════════════════════\n`;
+    output += `${SECTION_SEPARATOR}\n`;
     output += `// CONFIGURATION STRUCTURE\n`;
-    output += `// ═══════════════════════════════════════\n\n`;
+    output += `${SECTION_SEPARATOR}\n\n`;
 
     output += this.buildStructure(parsed);
     return output;

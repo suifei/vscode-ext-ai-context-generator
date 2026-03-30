@@ -4,14 +4,16 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as vscode from 'vscode';
 import { IgnoreFilter } from './ignoreFilter';
 import { Logger } from './logger';
-import { Scope } from '../config/constants';
+import { IGNORE_FILE_NAME } from '../config/constants';
 
 export interface ScanOptions {
-  scope: Scope;
-  selectedPaths?: string[];
+  /**
+   * Paths to scan. If provided, scans only these paths.
+   * If empty, scans the entire workspace.
+   */
+  paths?: string[];
 }
 
 export interface ScanResult {
@@ -20,28 +22,19 @@ export interface ScanResult {
   skipped: number;
 }
 
-const IGNORE_FILE_NAME = '.aicontextignore';
-
 export class FileScanner {
   constructor(private readonly ignoreFilter: IgnoreFilter) {}
 
   async scan(options: ScanOptions): Promise<ScanResult> {
     const workspaceRoot = this.ignoreFilter.getWorkspaceRoot();
 
-    switch (options.scope) {
-      case 'workspace':
-        return this.scanDirectoryAsync(workspaceRoot);
-      case 'folder': {
-        const folderUri = await this.getCurrentFolderUri();
-        return folderUri ? this.scanDirectoryAsync(folderUri.fsPath) : { files: [], directories: [], skipped: 0 };
-      }
-      case 'selected':
-        return options.selectedPaths?.length
-          ? this.scanSelectedPaths(options.selectedPaths)
-          : { files: [], directories: [], skipped: 0 };
-      default:
-        return { files: [], directories: [], skipped: 0 };
+    // If specific paths provided, scan only those
+    if (options.paths?.length) {
+      return this.scanSelectedPaths(options.paths);
     }
+
+    // Otherwise, scan entire workspace
+    return this.scanDirectoryAsync(workspaceRoot);
   }
 
   private async scanDirectoryAsync(dirPath: string, maxDepth = 100): Promise<ScanResult> {
@@ -133,13 +126,6 @@ export class FileScanner {
     } catch {
       return false;
     }
-  }
-
-  private async getCurrentFolderUri(): Promise<vscode.Uri | undefined> {
-    if (vscode.window.activeTextEditor) {
-      return vscode.Uri.file(path.dirname(vscode.window.activeTextEditor.document.uri.fsPath));
-    }
-    return vscode.workspace.workspaceFolders?.[0]?.uri;
   }
 
   sortFiles(files: string[]): string[] {

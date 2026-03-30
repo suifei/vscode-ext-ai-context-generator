@@ -8,6 +8,7 @@ import { OutlineExtractorRegistry } from './outline/registry';
 import { Logger, LogLevel } from './core/logger';
 import { generate, generateToClipboard, generateToFile, generateToPreview } from './commands/generateCommand';
 import { configureSettings } from './commands/configureCommand';
+import { generateIgnoreFile } from './commands/ignoreFileCommand';
 
 export function activate(context: vscode.ExtensionContext): void {
   // Initialize logger
@@ -29,26 +30,26 @@ export function activate(context: vscode.ExtensionContext): void {
   Logger.debug('Extension path:', context.extensionUri.fsPath);
   Logger.debug('Log level:', logLevelConfig);
 
-  // Register commands
+  // Register generate commands
   const generateClipboardCmd = vscode.commands.registerCommand(
     'aiContext.generate.clipboard',
-    (uri: vscode.Uri | vscode.Uri[] | undefined) => generateToClipboard(context, uri)
+    (uri, selectedFiles) => generateToClipboard(context, uri, selectedFiles)
   );
 
   const generateFileCmd = vscode.commands.registerCommand(
     'aiContext.generate.file',
-    (uri: vscode.Uri | vscode.Uri[] | undefined) => generateToFile(context, uri)
+    (uri, selectedFiles) => generateToFile(context, uri, selectedFiles)
   );
 
   const generatePreviewCmd = vscode.commands.registerCommand(
     'aiContext.generate.preview',
-    (uri: vscode.Uri | vscode.Uri[] | undefined) => generateToPreview(context, uri)
+    (uri, selectedFiles) => generateToPreview(context, uri, selectedFiles)
   );
 
   // Keep original command for command palette
   const generateCmd = vscode.commands.registerCommand(
     'aiContext.generate',
-    (uri: vscode.Uri | vscode.Uri[] | undefined) => generate(context, uri)
+    (uri, selectedFiles) => generate(context, uri, selectedFiles)
   );
 
   const configureCommand = vscode.commands.registerCommand(
@@ -61,6 +62,11 @@ export function activate(context: vscode.ExtensionContext): void {
     () => Logger.show()
   );
 
+  const generateIgnoreFileCommand = vscode.commands.registerCommand(
+    'aiContext.generate.ignoreFile',
+    (uri, selectedFiles) => generateIgnoreFile(context)
+  );
+
   // Register all disposables
   context.subscriptions.push(
     generateClipboardCmd,
@@ -68,7 +74,8 @@ export function activate(context: vscode.ExtensionContext): void {
     generatePreviewCmd,
     generateCmd,
     configureCommand,
-    openLogsCommand
+    openLogsCommand,
+    generateIgnoreFileCommand
   );
 
   // Show welcome message on first activation

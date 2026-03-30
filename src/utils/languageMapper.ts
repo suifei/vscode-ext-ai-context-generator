@@ -144,19 +144,10 @@ Object.entries(LANGUAGE_MAP).forEach(([langId, info]) => {
 });
 
 /**
- * Get language ID from file extension
- */
-export function getLanguageFromExtension(extension: string): string | undefined {
-  if (!extension.startsWith('.')) {
-    extension = '.' + extension;
-  }
-  return EXTENSION_MAP[extension.toLowerCase()];
-}
-
-/**
  * Get language name from file path
  */
 export function getLanguageFromPath(filePath: string): string | undefined {
   const ext = filePath.substring(filePath.lastIndexOf('.'));
-  return getLanguageFromExtension(ext);
+  if (!ext) return undefined;
+  return EXTENSION_MAP[ext.toLowerCase()];
 }

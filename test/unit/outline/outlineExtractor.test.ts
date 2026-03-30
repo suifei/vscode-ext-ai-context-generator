@@ -3,7 +3,7 @@
  */
 
 import { expect } from 'chai';
-import { OutlineExtractor } from '../../../../src/outline/outlineExtractor';
+import { OutlineExtractor } from '../../../src/outline/outlineExtractor';
 import * as vscode from 'vscode';
 
 describe('OutlineExtractor', () => {

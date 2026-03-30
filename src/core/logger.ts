@@ -12,12 +12,7 @@ export enum LogLevel {
   ERROR = 3,
 }
 
-const LOG_LEVEL_NAMES: Record<LogLevel, string> = {
-  [LogLevel.DEBUG]: 'DEBUG',
-  [LogLevel.INFO]: 'INFO',
-  [LogLevel.WARN]: 'WARN',
-  [LogLevel.ERROR]: 'ERROR',
-};
+const LOG_LEVEL_NAMES = ['DEBUG', 'INFO', 'WARN', 'ERROR'] as const;
 
 class LoggerImpl {
   private outputChannel: vscode.OutputChannel | null = null;

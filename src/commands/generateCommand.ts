@@ -6,59 +6,23 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { ContextGenerator, GenerationResult } from '../core/contextGenerator';
 import { OutputTarget } from '../config/constants';
-import { OutputPicker } from '../ui/outputPicker';
 import { Logger } from '../core/logger';
 
 /**
- * Generate to clipboard
+ * Normalize URI inputs to a consistent array format.
+ * Priority: selectedFiles (multi-selection) > selectedUri (single/clicked)
  */
-export async function generateToClipboard(
-  context: vscode.ExtensionContext,
-  selectedUri: vscode.Uri | vscode.Uri[] | undefined
-): Promise<void> {
-  await generateWithTarget(context, selectedUri, 'clipboard');
-}
-
-/**
- * Generate to file
- */
-export async function generateToFile(
-  context: vscode.ExtensionContext,
-  selectedUri: vscode.Uri | vscode.Uri[] | undefined
-): Promise<void> {
-  await generateWithTarget(context, selectedUri, 'file');
-}
-
-/**
- * Generate to preview
- */
-export async function generateToPreview(
-  context: vscode.ExtensionContext,
-  selectedUri: vscode.Uri | vscode.Uri[] | undefined
-): Promise<void> {
-  await generateWithTarget(context, selectedUri, 'preview');
-}
-
-/**
- * Main generate command - automatically determines scope from selection
- * @param context Extension context
- * @param selectedUri Selected resource URI(s) from explorer (passed by VSCode)
- */
-export async function generate(
-  context: vscode.ExtensionContext,
-  selectedUri: vscode.Uri | vscode.Uri[] | undefined
-): Promise<void> {
-  Logger.info('Command invoked: generate');
-
-  const selectedPaths = getSelectedPaths(selectedUri);
-  if (!selectedPaths || selectedPaths.length === 0) {
-    Logger.warn('No files selected for generation');
-    vscode.window.showWarningMessage('No files selected');
-    return;
+function normalizeUris(
+  selectedUri: vscode.Uri | vscode.Uri[] | undefined,
+  selectedFiles?: vscode.Uri[]
+): vscode.Uri[] | undefined {
+  if (selectedFiles && selectedFiles.length > 0) {
+    return selectedFiles;
   }
-
-  Logger.debug('Selected paths:', selectedPaths);
-  await generateContext(context, { selectedPaths });
+  if (Array.isArray(selectedUri)) {
+    return selectedUri.length > 0 ? selectedUri : undefined;
+  }
+  return selectedUri ? [selectedUri] : undefined;
 }
 
 /**
@@ -67,11 +31,14 @@ export async function generate(
 async function generateWithTarget(
   context: vscode.ExtensionContext,
   selectedUri: vscode.Uri | vscode.Uri[] | undefined,
+  selectedFiles: vscode.Uri[] | undefined,
   outputTarget: OutputTarget
 ): Promise<void> {
   Logger.info(`Command invoked: generate to ${outputTarget}`);
 
-  const selectedPaths = getSelectedPaths(selectedUri);
+  const uris = normalizeUris(selectedUri, selectedFiles);
+  const selectedPaths = getSelectedPaths(uris);
+
   if (!selectedPaths || selectedPaths.length === 0) {
     Logger.warn('No files selected for generation');
     vscode.window.showWarningMessage('No files selected');
@@ -80,6 +47,65 @@ async function generateWithTarget(
 
   Logger.debug('Selected paths:', selectedPaths);
   await generateContext(context, { selectedPaths, outputTarget });
+}
+
+/**
+ * Generate to clipboard
+ */
+export async function generateToClipboard(
+  context: vscode.ExtensionContext,
+  selectedUri: vscode.Uri | vscode.Uri[] | undefined,
+  selectedFiles?: vscode.Uri[]
+): Promise<void> {
+  await generateWithTarget(context, selectedUri, selectedFiles, 'clipboard');
+}
+
+/**
+ * Generate to file
+ */
+export async function generateToFile(
+  context: vscode.ExtensionContext,
+  selectedUri: vscode.Uri | vscode.Uri[] | undefined,
+  selectedFiles?: vscode.Uri[]
+): Promise<void> {
+  await generateWithTarget(context, selectedUri, selectedFiles, 'file');
+}
+
+/**
+ * Generate to preview
+ */
+export async function generateToPreview(
+  context: vscode.ExtensionContext,
+  selectedUri: vscode.Uri | vscode.Uri[] | undefined,
+  selectedFiles?: vscode.Uri[]
+): Promise<void> {
+  await generateWithTarget(context, selectedUri, selectedFiles, 'preview');
+}
+
+/**
+ * Main generate command - automatically determines scope from selection
+ * @param context Extension context
+ * @param selectedUri Selected resource URI(s) from explorer (passed by VSCode)
+ * @param selectedFiles All selected URIs from multi-selection (passed by VSCode)
+ */
+export async function generate(
+  context: vscode.ExtensionContext,
+  selectedUri: vscode.Uri | vscode.Uri[] | undefined,
+  selectedFiles?: vscode.Uri[]
+): Promise<void> {
+  Logger.info('Command invoked: generate');
+
+  const uris = normalizeUris(selectedUri, selectedFiles);
+  const selectedPaths = getSelectedPaths(uris);
+
+  if (!selectedPaths || selectedPaths.length === 0) {
+    Logger.warn('No files selected for generation');
+    vscode.window.showWarningMessage('No files selected');
+    return;
+  }
+
+  Logger.debug('Selected paths:', selectedPaths);
+  await generateContext(context, { selectedPaths });
 }
 
 /**
@@ -136,7 +162,7 @@ async function generateContext(
         Logger.debug('ContextGenerator initialized and settings loaded');
 
         // Use provided outputTarget or show picker
-        const outputTarget = options.outputTarget ?? await OutputPicker.show();
+        const outputTarget = options.outputTarget ?? await showOutputPicker();
         if (!outputTarget) {
           Logger.info('Generation cancelled by user (no output target selected)');
           return;
@@ -146,7 +172,6 @@ async function generateContext(
         progress.report({ message: 'Scanning files...' });
 
         const result = await generator.generate({
-          scope: 'selected',
           selectedPaths: options.selectedPaths,
         });
 
@@ -174,7 +199,7 @@ async function outputResult(content: string, target: OutputTarget, workspaceRoot
   Logger.debug(`Outputting to target: ${target}`);
   switch (target) {
     case 'clipboard':
-      await OutputPicker.copyToClipboard(content);
+      await vscode.env.clipboard.writeText(content);
       break;
 
     case 'file': {
@@ -207,9 +232,14 @@ async function outputResult(content: string, target: OutputTarget, workspaceRoot
       break;
     }
 
-    case 'preview':
-      await OutputPicker.showPreview(content);
+    case 'preview': {
+      const doc = await vscode.workspace.openTextDocument({
+        content,
+        language: 'markdown',
+      });
+      await vscode.window.showTextDocument(doc, { preview: true });
       break;
+    }
   }
 }
 
@@ -236,4 +266,30 @@ function showResultMessage(result: GenerationResult): void {
 
 function getWorkspaceRoot(): string | undefined {
   return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+}
+
+/**
+ * Show output target picker
+ */
+async function showOutputPicker(): Promise<OutputTarget | undefined> {
+  const items = [
+    {
+      label: '$(clippy) Copy to Clipboard',
+      value: 'clipboard' as OutputTarget,
+    },
+    {
+      label: '$(file) Save to File',
+      value: 'file' as OutputTarget,
+    },
+    {
+      label: '$(preview) Open in Preview',
+      value: 'preview' as OutputTarget,
+    },
+  ];
+
+  const selected = await vscode.window.showQuickPick(items, {
+    placeHolder: 'Select output destination',
+  });
+
+  return selected?.value;
 }

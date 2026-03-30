@@ -7,6 +7,7 @@
   "command.generate.preview.title": "生成 AI 上下文到预览窗口",
   "command.configure.title": "配置 AI 上下文生成器",
   "command.openLogs.title": "打开 AI 上下文生成器日志",
+  "command.generate.ignoreFile.title": "生成 .aicontextignore 配置文件",
   "command.category": "AI 上下文生成器",
   "submenu.config.label": "AI 上下文生成器：配置",
   "configuration.title": "AI 上下文生成器",

@@ -12,6 +12,7 @@ import {
   truncateText,
   extractCodeSignature,
 } from './formatConstants';
+import type { OutlineOptions } from './registry';
 
 interface SymbolNode {
   name: string;
@@ -20,9 +21,38 @@ interface SymbolNode {
   range: vscode.Range;
   children: SymbolNode[];
   signature?: string;
+  isPrivate?: boolean;
 }
 
 export class ASTExtractor extends OutlineExtractor {
+  protected options: Required<OutlineOptions>;
+
+  constructor() {
+    super();
+    this.options = { ...OutlineExtractor.DEFAULT_OPTIONS };
+  }
+
+  /**
+   * Extract outline with options
+   */
+  async extract(document: vscode.TextDocument, options?: OutlineOptions): Promise<string> {
+    this.options = this.mergeOptions(options);
+
+    try {
+      const symbols = await this.getDocumentSymbols(document);
+
+      if (!symbols || symbols.length === 0) {
+        // Fallback to base class method
+        return super.extract(document, options);
+      }
+
+      return this.formatDocumentSymbols(symbols, document);
+    } catch (error) {
+      Logger.warn(`AST extraction failed for ${document.uri.fsPath}:`, error);
+      return super.extract(document, options);
+    }
+  }
+
   /**
    * Extract hierarchical symbols using DocumentSymbol API
    */
@@ -40,35 +70,27 @@ export class ASTExtractor extends OutlineExtractor {
   }
 
   /**
-   * Extract outline with enhanced hierarchical information
-   */
-  async extract(document: vscode.TextDocument): Promise<string> {
-    try {
-      const symbols = await this.getDocumentSymbols(document);
-
-      if (!symbols || symbols.length === 0) {
-        // Fallback to base class method
-        return super.extract(document);
-      }
-
-      return this.formatDocumentSymbols(symbols, document);
-    } catch (error) {
-      Logger.warn(`AST extraction failed for ${document.uri.fsPath}:`, error);
-      return super.extract(document);
-    }
-  }
-
-  /**
    * Format hierarchical DocumentSymbols into outline
    */
   private formatDocumentSymbols(symbols: vscode.DocumentSymbol[], document: vscode.TextDocument): string {
     const lines: string[] = [];
-    const root = this.buildSymbolTree(symbols);
+    const root = this.buildSymbolTree(symbols, document);
 
     // Group by type at root level
-    const types = root.children.filter(s => this.isTypeSymbol(s.kind));
-    const functions = root.children.filter(s => this.isFunctionSymbol(s.kind));
-    const namespaces = root.children.filter(s => this.isNamespaceSymbol(s.kind));
+    let types = root.children.filter(s => this.isTypeSymbol(s.kind));
+    let functions = root.children.filter(s => this.isFunctionSymbol(s.kind));
+    let namespaces = root.children.filter(s => this.isNamespaceSymbol(s.kind));
+
+    // Filter private members if needed
+    if (!this.options.includePrivate) {
+      types = this.filterPrivateMembers(types);
+      functions = this.filterPrivateMembers(functions);
+    }
+
+    // Apply maxItems limit
+    types = types.slice(0, this.options.maxItems);
+    functions = functions.slice(0, this.options.maxItems);
+    namespaces = namespaces.slice(0, this.options.maxItems);
 
     if (types.length > 0) {
       lines.push(this.formatTypeSection(types, document));
@@ -86,30 +108,63 @@ export class ASTExtractor extends OutlineExtractor {
   }
 
   /**
+   * Filter out private members from nodes
+   */
+  private filterPrivateMembers(nodes: SymbolNode[]): SymbolNode[] {
+    return nodes
+      .filter(node => !node.isPrivate)
+      .map(node => ({
+        ...node,
+        children: this.filterPrivateMembers(node.children),
+      }));
+  }
+
+  /**
    * Build hierarchical symbol tree
    */
-  private buildSymbolTree(symbols: vscode.DocumentSymbol[]): SymbolNode {
+  private buildSymbolTree(symbols: vscode.DocumentSymbol[], document: vscode.TextDocument): SymbolNode {
     return {
       name: '(root)',
       kind: vscode.SymbolKind.Module,
       detail: '',
       range: new vscode.Range(0, 0, 0, 0),
-      children: symbols.map(s => this.documentSymbolToNode(s)),
+      children: symbols.map(s => this.documentSymbolToNode(s, document)),
+      isPrivate: false,
     };
   }
 
   /**
    * Convert DocumentSymbol to SymbolNode
    */
-  private documentSymbolToNode(symbol: vscode.DocumentSymbol): SymbolNode {
+  private documentSymbolToNode(symbol: vscode.DocumentSymbol, document: vscode.TextDocument): SymbolNode {
+    const isPrivate = this.checkIfPrivate(symbol, document);
     return {
       name: symbol.name,
       kind: symbol.kind,
       detail: symbol.detail,
       range: symbol.range,
       signature: this.extractSignature(symbol),
-      children: symbol.children.map(c => this.documentSymbolToNode(c)),
+      children: symbol.children.map(c => this.documentSymbolToNode(c, document)),
+      isPrivate,
     };
+  }
+
+  /**
+   * Check if a symbol is private
+   */
+  private checkIfPrivate(symbol: vscode.DocumentSymbol, document: vscode.TextDocument): boolean {
+    const line = document.lineAt(symbol.range.start.line).text;
+
+    // Check for private modifiers
+    if (line.includes('private ')) return true;
+
+    // Check for # private fields (TypeScript/JavaScript)
+    if (symbol.name.startsWith('#')) return true;
+
+    // Check for _ protected/private (Python/TypeScript convention)
+    if (symbol.name.startsWith('_')) return true;
+
+    return false;
   }
 
   /**
@@ -136,6 +191,11 @@ export class ASTExtractor extends OutlineExtractor {
       this.formatTypeNode(type, lines, document, 0);
     }
 
+    // Add truncated message if we hit the limit
+    if (types.length >= this.options.maxItems) {
+      lines.push(`// ... (output limited to ${this.options.maxItems} items)`);
+    }
+
     return lines.join('\n');
   }
 
@@ -144,7 +204,7 @@ export class ASTExtractor extends OutlineExtractor {
    */
   private formatTypeNode(node: SymbolNode, lines: string[], document: vscode.TextDocument, depth: number): void {
     const indent = '//   '.repeat(depth);
-    const lineInfo = this.getLineInfo(node.range, document);
+    const lineInfo = this.getDetailLevel() === 'basic' ? '' : this.getLineInfo(node.range, document);
     const kindName = this.getSymbolKindName(node.kind);
 
     // Type declaration
@@ -154,18 +214,35 @@ export class ASTExtractor extends OutlineExtractor {
       lines.push(`${indent}// ${node.signature}${lineInfo}`);
     }
 
+    // For basic detail level, skip members
+    if (this.options.detail === 'basic') {
+      return;
+    }
+
     // Format members (methods, properties)
-    const members = node.children.filter(c => this.isMemberSymbol(c.kind));
+    let members = node.children.filter(c => this.isMemberSymbol(c.kind));
+
+    // Filter private members from children if needed
+    if (!this.options.includePrivate) {
+      members = members.filter(m => !m.isPrivate);
+    }
+
     for (const member of members) {
       const memberIndent = '//   '.repeat(depth + 1);
-      const memberLineInfo = this.getLineInfo(member.range, document);
-      const memberKind = this.getSymbolKindName(member.kind);
-      const visibility = this.getVisibility(member.name);
 
-      if (visibility) {
-        lines.push(`${memberIndent}// ${visibility} ${memberKind} ${member.name}${memberLineInfo}`);
+      if (this.options.detail === 'detailed') {
+        const memberLineInfo = this.getLineInfo(member.range, document);
+        const memberKind = this.getSymbolKindName(member.kind);
+        const visibility = this.getVisibility(member.name);
+
+        if (visibility) {
+          lines.push(`${memberIndent}// ${visibility} ${memberKind} ${member.name}${memberLineInfo}`);
+        } else {
+          lines.push(`${memberIndent}// ${memberKind} ${member.name}${memberLineInfo}`);
+        }
       } else {
-        lines.push(`${memberIndent}// ${memberKind} ${member.name}${memberLineInfo}`);
+        // Standard detail - just list members
+        lines.push(`${memberIndent}// ${member.name}`);
       }
     }
 
@@ -174,6 +251,13 @@ export class ASTExtractor extends OutlineExtractor {
     for (const nested of nestedTypes) {
       this.formatTypeNode(nested, lines, document, depth + 1);
     }
+  }
+
+  /**
+   * Get current detail level
+   */
+  private getDetailLevel(): 'basic' | 'standard' | 'detailed' {
+    return this.options.detail;
   }
 
   /**
@@ -187,9 +271,18 @@ export class ASTExtractor extends OutlineExtractor {
     lines.push(OUTLINE_SEPARATOR);
 
     for (const fn of functions) {
-      const lineInfo = this.getLineInfo(fn.range, document);
-      const async = fn.name.includes('async') ? 'async ' : '';
-      lines.push(`// ${async}${fn.signature}${lineInfo}`);
+      if (this.options.detail === 'basic') {
+        lines.push(`// ${fn.name}`);
+      } else {
+        const lineInfo = this.getLineInfo(fn.range, document);
+        const async = fn.name.includes('async') ? 'async ' : '';
+        lines.push(`// ${async}${fn.signature}${lineInfo}`);
+      }
+    }
+
+    // Add truncated message if we hit the limit
+    if (functions.length >= this.options.maxItems) {
+      lines.push(`// ... (output limited to ${this.options.maxItems} items)`);
     }
 
     return lines.join('\n');

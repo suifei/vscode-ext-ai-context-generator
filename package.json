@@ -54,6 +54,11 @@
         "command": "aiContext.openLogs",
         "title": "%command.openLogs.title%",
         "category": "%command.category%"
+      },
+      {
+        "command": "aiContext.generate.ignoreFile",
+        "title": "%command.generate.ignoreFile.title%",
+        "category": "%command.category%"
       }
     ],
     "menus": {
@@ -83,6 +88,10 @@
         {
           "command": "aiContext.configure",
           "group": "2_settings@1"
+        },
+        {
+          "command": "aiContext.generate.ignoreFile",
+          "group": "3_file@1"
         }
       ],
       "commandPalette": [
@@ -294,8 +303,8 @@
     "watch": "webpack --mode development --watch",
     "lint": "eslint src --ext ts",
     "test": "npm run compile && npm run compile:tests && npm run test:unit",
-    "test:unit": "mocha out/test/unit/**/*.test.js",
-    "test:coverage": "nyc mocha out/test/unit/**/*.test.js",
+    "test:unit": "mocha out/test/test/unit/**/*.test.js",
+    "test:coverage": "nyc mocha out/test/test/unit/**/*.test.js",
     "package": "npm run compile && vsce package",
     "publish": "npm run package && vsce publish"
   },
@@ -319,8 +328,7 @@
   },
   "dependencies": {
     "ignore": "^5.3.1",
-    "js-tiktoken": "^1.0.12",
-    "web-tree-sitter": "^0.26.7"
+    "js-tiktoken": "^1.0.12"
   },
   "repository": {
     "type": "git",

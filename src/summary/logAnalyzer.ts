@@ -2,12 +2,13 @@
  * Log file analyzer: level distribution, error patterns, sampling
  */
 
-import * as path from 'path';
 import { FileReadResult } from '../core/fileReader';
-import { AIContextConfig, WARNING_EMOJI } from '../config/constants';
+import { AIContextConfig, WARNING_EMOJI, SECTION_SEPARATOR } from '../config/constants';
 import { getRelativePath } from '../utils/fileUtils';
 
 export class LogAnalyzer {
+  private static readonly LOG_LEVELS = ['DEBUG', 'INFO', 'WARN', 'WARNING', 'ERROR', 'FATAL', 'CRITICAL', 'TRACE'] as const;
+
   constructor(
     private config: AIContextConfig,
     private workspaceRoot: string
@@ -51,10 +52,7 @@ export class LogAnalyzer {
   }
 
   private initSamplesMap(): Record<string, string[]> {
-    return {
-      DEBUG: [], INFO: [], WARN: [], WARNING: [],
-      ERROR: [], FATAL: [], CRITICAL: [], TRACE: [],
-    };
+    return Object.fromEntries(LogAnalyzer.LOG_LEVELS.map(level => [level, []]));
   }
 
   private buildOutput(
@@ -69,9 +67,9 @@ export class LogAnalyzer {
     output += `// Total lines: ${lines.length}\n\n`;
 
     // Log level distribution
-    output += `// ═══════════════════════════════════════\n`;
+    output += `${SECTION_SEPARATOR}\n`;
     output += `// LOG LEVEL DISTRIBUTION\n`;
-    output += `// ═══════════════════════════════════════\n`;
+    output += `${SECTION_SEPARATOR}\n`;
 
     if (levels.size > 0) {
       const sortedLevels = Array.from(levels.entries()).sort((a, b) => b[1] - a[1]);
@@ -87,9 +85,9 @@ export class LogAnalyzer {
 
     // Error patterns
     if (errorLines.length > 0) {
-      output += `// ═══════════════════════════════════════\n`;
+      output += `${SECTION_SEPARATOR}\n`;
       output += `// RECENT ERROR PATTERNS (first ${errorLines.length})\n`;
-      output += `// ═══════════════════════════════════════\n`;
+      output += `${SECTION_SEPARATOR}\n`;
       for (const line of errorLines) {
         output += `// ${line.substring(0, 150)}\n`;
       }
@@ -97,9 +95,9 @@ export class LogAnalyzer {
     }
 
     // Sample lines by level
-    output += `// ═══════════════════════════════════════\n`;
+    output += `${SECTION_SEPARATOR}\n`;
     output += `// SAMPLE LOG ENTRIES (up to ${maxSamples} per level)\n`;
-    output += `// ═══════════════════════════════════════\n`;
+    output += `${SECTION_SEPARATOR}\n`;
 
     for (const [level, samples] of Object.entries(samplesByLevel)) {
       if (samples.length > 0) {

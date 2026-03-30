@@ -3,7 +3,7 @@
  */
 
 import { FileReadResult } from '../core/fileReader';
-import { AIContextConfig, WARNING_EMOJI } from '../config/constants';
+import { AIContextConfig, WARNING_EMOJI, SECTION_SEPARATOR } from '../config/constants';
 import { getRelativePath } from '../utils/fileUtils';
 
 export class CsvAnalyzer {
@@ -123,9 +123,9 @@ export class CsvAnalyzer {
     output += `// Total rows: ${dataRows.length}\n`;
     output += `// Delimiter: "${delimiter === '\t' ? '\\t' : delimiter}"\n\n`;
 
-    output += `// ═══════════════════════════════════════\n`;
+    output += `${SECTION_SEPARATOR}\n`;
     output += `// SCHEMA (${headers.length} columns)\n`;
-    output += `// ═══════════════════════════════════════\n`;
+    output += `${SECTION_SEPARATOR}\n`;
 
     for (let i = 0; i < headers.length; i++) {
       const samples = sampleValues[i].filter(v => v).slice(0, 2);
@@ -136,9 +136,9 @@ export class CsvAnalyzer {
     output += '\n';
 
     const sampleRows = Math.min(this.config.csvSampleRows, dataRows.length);
-    output += `// ═══════════════════════════════════════\n`;
+    output += `${SECTION_SEPARATOR}\n`;
     output += `// SAMPLE DATA (first ${sampleRows} rows)\n`;
-    output += `// ═══════════════════════════════════════\n`;
+    output += `${SECTION_SEPARATOR}\n`;
 
     for (const row of dataRows.slice(0, sampleRows)) {
       output += `// ${row.substring(0, 200)}\n`;

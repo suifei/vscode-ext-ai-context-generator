@@ -12,13 +12,43 @@ import {
   truncateText,
   extractCodeSignature,
 } from './formatConstants';
+import type { OutlineOptions } from './registry';
 
 export class OutlineExtractor {
+  protected options: Required<OutlineOptions>;
+
+  public static readonly DEFAULT_OPTIONS: Required<OutlineOptions> = {
+    detail: 'standard',
+    includePrivate: false,
+    extractComments: true,
+    maxItems: 100,
+  };
+
+  constructor() {
+    this.options = { ...OutlineExtractor.DEFAULT_OPTIONS };
+  }
+
+  /**
+   * Merge user options with defaults
+   */
+  protected mergeOptions(options?: OutlineOptions): Required<OutlineOptions> {
+    if (!options) return this.options;
+
+    return {
+      detail: options.detail || OutlineExtractor.DEFAULT_OPTIONS.detail,
+      includePrivate: options.includePrivate ?? OutlineExtractor.DEFAULT_OPTIONS.includePrivate,
+      extractComments: options.extractComments ?? OutlineExtractor.DEFAULT_OPTIONS.extractComments,
+      maxItems: options.maxItems || OutlineExtractor.DEFAULT_OPTIONS.maxItems,
+    };
+  }
+
   /**
    * Extract outline from document
    * Returns formatted string with type definitions, functions, etc.
    */
-  async extract(document: vscode.TextDocument): Promise<string> {
+  async extract(document: vscode.TextDocument, options?: OutlineOptions): Promise<string> {
+    this.options = this.mergeOptions(options);
+
     try {
       const symbols = await this.getSymbols(document);
       return this.formatSymbols(symbols, document);
@@ -51,9 +81,20 @@ export class OutlineExtractor {
     const lines: string[] = [];
 
     // Group by symbol kind
-    const types = symbols.filter(s => this.isTypeSymbol(s.kind));
-    const functions = symbols.filter(s => this.isFunctionSymbol(s.kind));
-    const imports = symbols.filter(s => this.isNamespaceSymbol(s.kind));
+    let types = symbols.filter(s => this.isTypeSymbol(s.kind));
+    let functions = symbols.filter(s => this.isFunctionSymbol(s.kind));
+    let imports = symbols.filter(s => this.isNamespaceSymbol(s.kind));
+
+    // Filter private members if needed
+    if (!this.options.includePrivate) {
+      types = types.filter(s => !this.isPrivateSymbol(s));
+      functions = functions.filter(s => !this.isPrivateSymbol(s));
+    }
+
+    // Apply maxItems limit
+    types = types.slice(0, this.options.maxItems);
+    functions = functions.slice(0, this.options.maxItems);
+    imports = imports.slice(0, this.options.maxItems);
 
     // Add types section
     if (types.length > 0) {
@@ -61,6 +102,9 @@ export class OutlineExtractor {
       for (const type of types) {
         const line = this.getSymbolLine(type, document);
         lines.push(`// ${line}`);
+      }
+      if (types.length >= this.options.maxItems) {
+        lines.push(`// ... (output limited to ${this.options.maxItems} items)`);
       }
       lines.push('');
     }
@@ -72,6 +116,9 @@ export class OutlineExtractor {
         const line = this.getSymbolLine(fn, document);
         lines.push(`// ${line}`);
       }
+      if (functions.length >= this.options.maxItems) {
+        lines.push(`// ... (output limited to ${this.options.maxItems} items)`);
+      }
       lines.push('');
     }
 
@@ -81,10 +128,20 @@ export class OutlineExtractor {
       for (const imp of imports) {
         lines.push(`// ${imp.name}`);
       }
+      if (imports.length >= this.options.maxItems) {
+        lines.push(`// ... (output limited to ${this.options.maxItems} items)`);
+      }
       lines.push('');
     }
 
     return lines.join('\n');
+  }
+
+  /**
+   * Check if a symbol is private
+   */
+  protected isPrivateSymbol(symbol: vscode.SymbolInformation): boolean {
+    return symbol.name.startsWith('_') || symbol.name.startsWith('#');
   }
 
   /**
@@ -93,7 +150,16 @@ export class OutlineExtractor {
   protected getSymbolLine(symbol: vscode.SymbolInformation, document: vscode.TextDocument): string {
     const range = symbol.location.range;
     const line = document.lineAt(range.start.line).text.trim();
-    return truncateText(extractCodeSignature(line), 150);
+
+    if (this.options.detail === 'basic') {
+      return symbol.name;
+    }
+
+    const signature = truncateText(extractCodeSignature(line), 150);
+    if (this.options.detail === 'detailed') {
+      return `${symbol.name} → ${signature}`;
+    }
+    return signature || symbol.name;
   }
 
   /**

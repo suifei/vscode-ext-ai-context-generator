@@ -7,6 +7,7 @@
   "command.generate.preview.title": "Generate AI Context to Preview",
   "command.configure.title": "Configure AI Context Generator",
   "command.openLogs.title": "Open AI Context Generator Logs",
+  "command.generate.ignoreFile.title": "Generate .aicontextignore File",
   "command.category": "AI Context Generator",
   "submenu.config.label": "AI Context Generator: Configuration",
   "configuration.title": "AI Context Generator",

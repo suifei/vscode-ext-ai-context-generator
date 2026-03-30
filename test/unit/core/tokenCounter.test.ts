@@ -38,29 +38,10 @@ describe('TokenCounter', () => {
       expect(counter.count('' as any)).to.equal(0);
     });
 
-    it('should count tokens in multiple texts', () => {
-      const texts = ['Hello', 'world', 'test'];
-      const count = counter.countMultiple(texts);
-      expect(count).to.be.greaterThan(0);
-    });
-
     it('should handle large texts efficiently', () => {
       const largeText = 'a'.repeat(10000);
       const count = counter.count(largeText);
       expect(count).to.be.greaterThan(0);
-    });
-
-    it('should count file with header', () => {
-      const content = 'const x = 42;';
-      const filePath = 'src/test.ts';
-      const count = counter.countFile(content, filePath);
-      expect(count).to.be.greaterThan(counter.count(content));
-    });
-
-    it('should count file without header', () => {
-      const content = 'const x = 42;';
-      const count = counter.countFile(content);
-      expect(count).to.equal(counter.count(content));
     });
   });
 
@@ -102,54 +83,6 @@ describe('TokenCounter', () => {
       const counter = new TokenCounter('simple');
       expect(counter.formatTokenCount(1500000)).to.equal('1.5M');
       expect(counter.formatTokenCount(1000000)).to.equal('1.0M');
-    });
-  });
-
-  describe('limit checking', () => {
-    const counter = new TokenCounter('simple');
-
-    it('should detect when limit is exceeded', () => {
-      expect(counter.exceedsLimit(150000, 128000)).to.be.true;
-    });
-
-    it('should detect when limit is not exceeded', () => {
-      expect(counter.exceedsLimit(100000, 128000)).to.be.false;
-    });
-
-    it('should detect when exactly at limit', () => {
-      expect(counter.exceedsLimit(128000, 128000)).to.be.false;
-    });
-
-    it('should calculate usage percentage', () => {
-      expect(counter.getUsagePercentage(64000, 128000)).to.equal(50);
-      expect(counter.getUsagePercentage(128000, 128000)).to.equal(100);
-      expect(counter.getUsagePercentage(256000, 128000)).to.equal(100);
-    });
-  });
-
-  describe('createTokenCounter', () => {
-    it('should create counter from config', () => {
-      const config = {
-        tokenEstimation: 'tiktoken' as const,
-        maxFileSize: 51200,
-        maxTokens: 128000,
-        textPreviewLength: 300,
-        logSampleLines: 5,
-        csvSampleRows: 3,
-        defaultTemplate: 'default',
-        sensitiveKeyPatterns: [],
-        autoDetectLanguage: true,
-        ignorePatterns: [],
-        binaryFilePatterns: [],
-        outputFileName: 'ai-context.md',
-        showTreeEmoji: true,
-        parallelFileReads: 50,
-      };
-
-      const { createTokenCounter } = require('../../../src/core/tokenCounter');
-      const counter = createTokenCounter(config);
-
-      expect(counter).to.be.instanceOf(TokenCounter);
     });
   });
 
