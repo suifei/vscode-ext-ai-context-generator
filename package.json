@@ -1,0 +1,213 @@
+{
+  "name": "ai-context-generator",
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "version": "1.0.0",
+  "publisher": "suifei",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "context",
+    "llm",
+    "chatgpt",
+    "claude",
+    "code context",
+    "documentation"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aiContext.generateWorkspace",
+        "title": "%command.generateWorkspace.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "aiContext.generateFolder",
+        "title": "%command.generateFolder.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "aiContext.generateSelected",
+        "title": "%command.generateSelected.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "aiContext.configure",
+        "title": "%command.configure.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "aiContext.openSidebar",
+        "title": "%command.openSidebar.title%",
+        "category": "%command.category%",
+        "icon": "$(sidebar-right)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "aiContext.generateWorkspace",
+        "key": "ctrl+shift+alt+c",
+        "mac": "cmd+shift+alt+c"
+      },
+      {
+        "command": "aiContext.generateFolder",
+        "key": "ctrl+shift+alt+f",
+        "mac": "cmd+shift+alt+f"
+      },
+      {
+        "command": "aiContext.generateSelected",
+        "key": "ctrl+shift+alt+s",
+        "mac": "cmd+shift+alt+s"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "aiContext.generateSelected",
+          "group": "workspace",
+          "when": "explorerResourceIsFolder || listMultiSelection"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "aiContext.generateSelected",
+          "when": "filesExplorerFocus"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "aiContextSidebar",
+          "title": "%viewsContainers.title%",
+          "icon": "$(files)"
+        }
+      ]
+    },
+    "views": {
+      "aiContextSidebar": [
+        {
+          "id": "aiContextSidebarView",
+          "name": "%view.name%",
+          "type": "webview"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "%configuration.title%",
+      "properties": {
+        "aiContext.maxFileSize": {
+          "type": "number",
+          "default": 51200,
+          "description": "%configuration.maxFileSize.description%"
+        },
+        "aiContext.maxTokens": {
+          "type": "number",
+          "default": 128000,
+          "description": "%configuration.maxTokens.description%"
+        },
+        "aiContext.textPreviewLength": {
+          "type": "number",
+          "default": 300,
+          "description": "%configuration.textPreviewLength.description%"
+        },
+        "aiContext.logSampleLines": {
+          "type": "number",
+          "default": 5,
+          "description": "%configuration.logSampleLines.description%"
+        },
+        "aiContext.csvSampleRows": {
+          "type": "number",
+          "default": 3,
+          "description": "%configuration.csvSampleRows.description%"
+        },
+        "aiContext.defaultTemplate": {
+          "type": "string",
+          "default": "default",
+          "description": "%configuration.defaultTemplate.description%"
+        },
+        "aiContext.sensitiveKeyPatterns": {
+          "type": "array",
+          "default": ["password", "passwd", "secret", "token", "api_key", "apikey", "private_key", "credential"],
+          "description": "%configuration.sensitiveKeyPatterns.description%"
+        },
+        "aiContext.autoDetectLanguage": {
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.autoDetectLanguage.description%"
+        },
+        "aiContext.ignorePatterns": {
+          "type": "array",
+          "default": ["node_modules/**", "dist/**", "build/**", ".git/**", "coverage/**", "*.min.js", "*.min.css", "package-lock.json", "yarn.lock", "pnpm-lock.yaml"],
+          "description": "%configuration.ignorePatterns.description%"
+        },
+        "aiContext.binaryFilePatterns": {
+          "type": "array",
+          "default": ["*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp", "*.ico", "*.bmp", "*.svg", "*.mp3", "*.mp4", "*.wav", "*.avi", "*.mov", "*.zip", "*.tar", "*.gz", "*.exe", "*.dll", "*.so", "*.dylib", "*.woff", "*.woff2", "*.ttf", "*.eot", "*.bin", "*.dat"],
+          "description": "%configuration.binaryFilePatterns.description%"
+        },
+        "aiContext.defaultOutputTarget": {
+          "type": "string",
+          "enum": ["clipboard", "file", "preview"],
+          "default": "clipboard",
+          "enumDescriptions": ["%enum.clipboard%", "%enum.file%", "%enum.preview%"],
+          "description": "%configuration.defaultOutputTarget.description%"
+        },
+        "aiContext.outputFileName": {
+          "type": "string",
+          "default": "ai-context.md",
+          "description": "%configuration.outputFileName.description%"
+        },
+        "aiContext.showTreeEmoji": {
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.showTreeEmoji.description%"
+        },
+        "aiContext.tokenEstimation": {
+          "type": "string",
+          "enum": ["tiktoken", "simple"],
+          "default": "tiktoken",
+          "enumDescriptions": ["%enum.tiktoken%", "%enum.simple%"],
+          "description": "%configuration.tokenEstimation.description%"
+        },
+        "aiContext.parallelFileReads": {
+          "type": "number",
+          "default": 50,
+          "description": "%configuration.parallelFileReads.description%"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "webpack --mode production",
+    "watch": "webpack --mode development --watch",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.50.0",
+    "prettier": "^3.0.0",
+    "ts-loader": "^9.5.0",
+    "typescript": "^5.2.0",
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.0"
+  },
+  "dependencies": {
+    "ignore": "^5.3.1",
+    "js-tiktoken": "^1.0.12"
+  }
+}
