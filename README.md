@@ -52,6 +52,7 @@ Or install from the [Visual Studio Marketplace](https://marketplace.visualstudio
 - `AI Context Generator: Generate AI Context for Current Folder` - Generate context for current folder
 - `AI Context Generator: Generate AI Context for Selected Files` - Generate context for selected files
 - `AI Context Generator: Open AI Context Sidebar` - Open the sidebar panel
+- `AI Context Generator: Open Logs` - Open the output panel to view logs
 
 ### Configuration
 
@@ -73,6 +74,7 @@ dist/**
 | `aiContext.defaultOutputTarget` | enum | clipboard | Default output destination (clipboard/file/preview) |
 | `aiContext.tokenEstimation` | enum | tiktoken | Token counting method |
 | `aiContext.showTreeEmoji` | boolean | true | Show emoji markers in directory tree |
+| `aiContext.logLevel` | enum | info | Log level for output channel (debug/info/warn/error) |
 
 ### Template Variables
 
@@ -183,6 +185,7 @@ MIT
 - `AI 上下文生成器: 为当前文件夹生成 AI 上下文` - 为当前文件夹生成上下文
 - `AI 上下文生成器: 为选中文件生成 AI 上下文` - 为选中文件生成上下文
 - `AI 上下文生成器: 打开 AI 上下文侧边栏` - 打开侧边栏面板
+- `AI 上下文生成器: 打开 AI 上下文生成器日志` - 打开输出面板查看日志
 
 ### 配置
 
@@ -204,6 +207,7 @@ dist/**
 | `aiContext.defaultOutputTarget` | enum | clipboard | 默认输出目标（clipboard/file/preview） |
 | `aiContext.tokenEstimation` | enum | tiktoken | Token 计数方法 |
 | `aiContext.showTreeEmoji` | boolean | true | 在目录树中显示 emoji 标记 |
+| `aiContext.logLevel` | enum | info | 输出通道的日志级别（debug/info/warn/error） |
 
 ### 模板变量
 

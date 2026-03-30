@@ -16,7 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Initial stable release
-- **Testing Infrastructure**: Complete unit test suite with Mocha, Chai, and Sinon
+- **Logging System**: Output channel for debugging and troubleshooting
+  - Four log levels: DEBUG, INFO, WARN, ERROR
+  - Logs displayed in VSCode Output Panel ("AI Context Generator" channel)
+  - Configurable via `aiContext.logLevel` setting
+  - Command: `AI Context Generator: Open Logs` to view output panel
+  - Logs key operations: command invocation, file scanning, token counting, errors
+- **Testing Infrastructure**: Complete unit test suite with Mocha and Chai
+  - 143 tests across 5 core modules (all passing)
   - TokenCounter tests (tiktoken/simple mode, edge cases)
   - IgnoreFilter tests (gitignore syntax, path normalization)
   - DirTreeGenerator tests (tree structure, emoji highlighting, depth limits)
