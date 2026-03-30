@@ -2,17 +2,15 @@
  * Recursive file discovery with filtering
  */
 
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { IgnoreFilter } from './ignoreFilter';
 import { Scope } from '../config/constants';
-import { getRelativePath } from '../utils/fileUtils';
 
 export interface ScanOptions {
   scope: Scope;
   selectedPaths?: string[];
-  includeIgnored?: boolean;
 }
 
 export interface ScanResult {
@@ -20,6 +18,8 @@ export interface ScanResult {
   directories: string[];
   skipped: number;
 }
+
+const IGNORE_FILE_NAME = '.aicontextignore';
 
 export class FileScanner {
   constructor(private readonly ignoreFilter: IgnoreFilter) {}
@@ -29,10 +29,11 @@ export class FileScanner {
 
     switch (options.scope) {
       case 'workspace':
-        return this.scanDirectory(workspaceRoot);
-      case 'folder':
+        return this.scanDirectoryAsync(workspaceRoot);
+      case 'folder': {
         const folderUri = await this.getCurrentFolderUri();
-        return folderUri ? this.scanDirectory(folderUri.fsPath) : { files: [], directories: [], skipped: 0 };
+        return folderUri ? this.scanDirectoryAsync(folderUri.fsPath) : { files: [], directories: [], skipped: 0 };
+      }
       case 'selected':
         return options.selectedPaths?.length
           ? this.scanSelectedPaths(options.selectedPaths)
@@ -42,7 +43,7 @@ export class FileScanner {
     }
   }
 
-  private scanDirectory(dirPath: string, maxDepth = 100): ScanResult {
+  private async scanDirectoryAsync(dirPath: string, maxDepth = 100): Promise<ScanResult> {
     const files: string[] = [];
     const directories: string[] = [];
     let skipped = 0;
@@ -50,7 +51,7 @@ export class FileScanner {
     if (maxDepth <= 0) return { files, directories, skipped };
 
     try {
-      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+      const entries = await fs.readdir(dirPath, { withFileTypes: true });
 
       for (const entry of entries) {
         if (entry.name === IGNORE_FILE_NAME) continue;
@@ -64,7 +65,7 @@ export class FileScanner {
           }
 
           directories.push(fullPath);
-          const subResult = this.scanDirectory(fullPath, maxDepth - 1);
+          const subResult = await this.scanDirectoryAsync(fullPath, maxDepth - 1);
           files.push(...subResult.files);
           directories.push(...subResult.directories);
           skipped += subResult.skipped;
@@ -74,7 +75,7 @@ export class FileScanner {
             continue;
           }
 
-          if (this.isFileReadable(fullPath)) {
+          if (await this.isFileReadable(fullPath)) {
             files.push(fullPath);
           } else {
             skipped++;
@@ -89,18 +90,18 @@ export class FileScanner {
     return { files, directories, skipped };
   }
 
-  private scanSelectedPaths(selectedPaths: string[]): ScanResult {
+  private async scanSelectedPaths(selectedPaths: string[]): Promise<ScanResult> {
     const files: string[] = [];
     const directories: string[] = [];
     let skipped = 0;
 
     for (const selectedPath of selectedPaths) {
       try {
-        const stats = fs.statSync(selectedPath);
+        const stats = await fs.stat(selectedPath);
 
         if (stats.isDirectory()) {
           directories.push(selectedPath);
-          const result = this.scanDirectory(selectedPath);
+          const result = await this.scanDirectoryAsync(selectedPath);
           files.push(...result.files);
           directories.push(...result.directories);
           skipped += result.skipped;
@@ -110,7 +111,7 @@ export class FileScanner {
             continue;
           }
 
-          if (this.isFileReadable(selectedPath)) {
+          if (await this.isFileReadable(selectedPath)) {
             files.push(selectedPath);
           } else {
             skipped++;
@@ -124,9 +125,9 @@ export class FileScanner {
     return { files, directories, skipped };
   }
 
-  private isFileReadable(filePath: string): boolean {
+  private async isFileReadable(filePath: string): Promise<boolean> {
     try {
-      fs.accessSync(filePath, fs.constants.R_OK);
+      await fs.access(filePath, fs.constants.R_OK);
       return true;
     } catch {
       return false;
@@ -144,5 +145,3 @@ export class FileScanner {
     return files.sort((a, b) => a.localeCompare(b));
   }
 }
-
-const IGNORE_FILE_NAME = '.aicontextignore';

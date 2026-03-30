@@ -1,26 +1,90 @@
+# ====================
+# 自定义特定文件
+# ====================
 CLAUDE.md
 AGENTS.md
-node_modules/**/*
-.claude/**/*
-out/**/*
+.claude/
+!important.config.js
 
-.DS_Store
-.idea/**/*
-.vscode/**/*
-*.log
-*.tmp
-*.bak
-*.swp
-*.swo
+# ====================
+# 环境与密钥文件
+# ====================
 *.env
 *.env.local
 *.env.development
 *.env.test
 *.env.production
 *.env.*.local
-dist/**/*
-build/**/*
-coverage/**/*
+
+# ====================
+# 依赖目录
+# ====================
+node_modules/
+vendor/
+.pyenv/
+.venv/
+venv/
+
+# ====================
+# 构建产物与缓存
+# ====================
+dist/
+build/
+out/
+bin/
+obj/
+target/
+__pycache__/
+.nyc_output/
 *.tsbuildinfo
 *.eslintcache
 
+# ====================
+# 编译与打包文件
+# ====================
+*.class
+*.o
+*.so
+*.dll
+*.exe
+*.min.js
+*.min.css
+*.map
+*.tar
+*.gz
+*.zip
+*.vsix
+
+# ====================
+# 测试覆盖率
+# ====================
+coverage/
+
+# ====================
+# 系统与 IDE 文件
+# ====================
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
+
+# ====================
+# VSCode (排除用户设置，保留配置)
+# ====================
+.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# ====================
+# 版本控制
+# ====================
+.git/
+.gitignore
+
+# ====================
+# 临时与日志文件
+# ====================
+*.log
+*.tmp
+*.bak

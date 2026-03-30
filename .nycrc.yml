@@ -1,0 +1,17 @@
+# NYC (Istanbul) coverage configuration
+all: true
+include:
+  - 'src/**/*.ts'
+exclude:
+  - 'src/**/*.test.ts'
+  - 'src/**/types.ts'
+  - 'test/**'
+extension:
+  - .ts
+reporter:
+  - text
+  - text-summary
+  - html
+report-dir: coverage
+temp-dir: .nyc_output
+check-coverage: false

@@ -192,22 +192,41 @@
     "compile": "webpack --mode production",
     "watch": "webpack --mode development --watch",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "npm run compile && npm run test:unit",
+    "test:unit": "mocha out/test/unit/**/*.test.js",
+    "test:coverage": "nyc mocha out/test/unit/**/*.test.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.6",
     "@types/node": "^18.0.0",
     "@types/vscode": "^1.80.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "chai": "^4.4.1",
     "eslint": "^8.50.0",
+    "mocha": "^10.2.0",
+    "nyc": "^15.1.0",
     "prettier": "^3.0.0",
     "ts-loader": "^9.5.0",
     "typescript": "^5.2.0",
+    "vsce": "^2.15.0",
     "webpack": "^5.88.0",
     "webpack-cli": "^5.1.0"
   },
   "dependencies": {
     "ignore": "^5.3.1",
     "js-tiktoken": "^1.0.12"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/suifei/ai-context-generator"
+  },
+  "bugs": {
+    "url": "https://github.com/suifei/ai-context-generator/issues"
+  },
+  "homepage": "https://github.com/suifei/ai-context-generator#readme",
+  "license": "MIT"
 }

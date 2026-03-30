@@ -1,0 +1,7 @@
+# Mocha configuration
+require: 'test/helpers/setup.js'
+timeout: 5000
+recursive: true
+reporter: spec
+extension:
+  - '.test.js'

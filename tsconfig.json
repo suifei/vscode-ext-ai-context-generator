@@ -4,7 +4,7 @@
     "lib": ["ES2020"],
     "module": "commonjs",
     "outDir": "out",
-    "rootDir": "src",
+    "rootDir": ".",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -14,7 +14,8 @@
     "declarationMap": true,
     "sourceMap": true,
     "moduleResolution": "node",
-    "types": ["node", "vscode"]
+    "types": ["node", "mocha", "chai"]
   },
-  "exclude": ["node_modules", "dist", "out"]
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -1,0 +1,49 @@
+# Source files
+src/**
+tsconfig.json
+webpack.config.js
+.eslintrc.json
+.prettierrc
+
+# Test files
+test/**
+**/*.test.ts
+.mocha.yml
+.nycrc.yml
+
+# Documentation
+AI-Context-Generator-PRD.md
+VSCODE_MARKETPLACE.md
+CLAUDE.md
+
+# Git
+.git/**
+.gitignore
+
+# Development artifacts
+.vscode-test/**
+
+# Build artifacts
+out/**
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# VSIX files
+*.vsix
+
+# Node modules
+node_modules/**
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files (keep launch.json and tasks.json for users)
+.vscode/settings.json
+.idea/**
+*.swp
+*.swo
+*~

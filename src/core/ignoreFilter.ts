@@ -18,14 +18,17 @@ export class IgnoreFilter {
   }
 
   private loadPatterns(additionalPatterns: string[]): void {
+    // Create a fresh ignore instance to clear previous patterns
+    this.ignoreInstance = Ignore();
+
     const ignoreFilePath = path.join(this.workspaceRoot, IGNORE_FILE_NAME);
 
     if (fs.existsSync(ignoreFilePath)) {
       try {
         const content = fs.readFileSync(ignoreFilePath, 'utf-8');
-        this.ignoreInstance = Ignore().add(content);
+        this.ignoreInstance = this.ignoreInstance.add(content);
       } catch {
-        this.ignoreInstance = Ignore();
+        // Keep the fresh instance
       }
     }
 

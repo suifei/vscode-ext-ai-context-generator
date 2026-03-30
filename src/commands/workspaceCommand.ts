@@ -84,11 +84,12 @@ async function outputResult(content: string, target: OutputTarget, workspaceRoot
       await OutputPicker.copyToClipboard(content);
       break;
 
-    case 'file':
+    case 'file': {
       const config = vscode.workspace.getConfiguration('aiContext');
       const fileName = config.get<string>('outputFileName', 'ai-context.md');
       await OutputPicker.saveToFile(content, path.join(workspaceRoot, fileName));
       break;
+    }
 
     case 'preview':
       await OutputPicker.showPreview(content);
