@@ -4,7 +4,7 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { ContextGenerator } from '../core/contextGenerator';
+import { ContextGenerator, GenerationResult } from '../core/contextGenerator';
 import { Scope, OutputTarget } from '../config/constants';
 import { OutputPicker } from '../ui/outputPicker';
 import { Logger } from '../core/logger';
@@ -102,7 +102,7 @@ async function generateContext(
 }
 
 async function outputResult(content: string, target: OutputTarget, workspaceRoot: string): Promise<void> {
-  Logger.debug(`Outputting to target: ${target}, content length: ${content.length} chars`);
+  Logger.debug(`Outputting to target: ${target}`);
   switch (target) {
     case 'clipboard':
       await OutputPicker.copyToClipboard(content);
@@ -121,7 +121,7 @@ async function outputResult(content: string, target: OutputTarget, workspaceRoot
   }
 }
 
-function showResultMessage(result: any): void {
+function showResultMessage(result: GenerationResult): void {
   const { fileCount, tokenCount, exceededLimit } = result;
 
   if (exceededLimit) {

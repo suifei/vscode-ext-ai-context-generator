@@ -5,7 +5,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { IgnoreFilter } from './ignoreFilter';
-import { FileScanner, ScanOptions } from './fileScanner';
+import { FileScanner } from './fileScanner';
 import { DirTreeGenerator } from './dirTreeGenerator';
 import { FileReader, FileReadResult } from './fileReader';
 import { TokenCounter } from './tokenCounter';
@@ -220,7 +220,7 @@ export class ContextGenerator {
   private loadConfigFromSettings(vscodeConfig: vscode.WorkspaceConfiguration): Partial<AIContextConfig> {
     const result: Partial<AIContextConfig> = {};
 
-    for (const [key, type] of Object.entries(SETTINGS_KEYS)) {
+    for (const key of Object.keys(SETTINGS_KEYS)) {
       const defaultValue = DEFAULT_CONFIG[key as keyof AIContextConfig];
       const value = vscodeConfig.get(key, defaultValue);
       (result as any)[key] = value;

@@ -22,7 +22,6 @@ const LOG_LEVEL_NAMES: Record<LogLevel, string> = {
 class LoggerImpl {
   private outputChannel: vscode.OutputChannel | null = null;
   private currentLevel: LogLevel = LogLevel.INFO;
-  private isEnabled: boolean = true;
 
   initialize(): void {
     if (!this.outputChannel) {
@@ -34,10 +33,6 @@ class LoggerImpl {
   setLevel(level: LogLevel): void {
     this.currentLevel = level;
     this.info(`Log level set to: ${LOG_LEVEL_NAMES[level]}`);
-  }
-
-  setEnabled(enabled: boolean): void {
-    this.isEnabled = enabled;
   }
 
   dispose(): void {
@@ -54,13 +49,12 @@ class LoggerImpl {
   }
 
   private log(level: LogLevel, message: string, ...args: unknown[]): void {
-    if (!this.isEnabled || level < this.currentLevel) {
+    if (level < this.currentLevel) {
       return;
     }
 
-    const timestamp = new Date().toISOString().split('T')[1].slice(0, 12);
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
     const prefix = `[${timestamp}] [${LOG_LEVEL_NAMES[level]}]`;
-
     const formattedMessage = this.formatMessage(message, args);
     const fullMessage = `${prefix} ${formattedMessage}`;
 
@@ -125,10 +119,6 @@ class LoggerImpl {
   }
 
   // Convenience methods for common operations
-  logFileOperation(operation: string, filePath: string, details?: unknown): void {
-    this.info(`File ${operation}:`, filePath, details);
-  }
-
   logTokenCount(count: number, limit: number): void {
     const percentage = Math.round((count / limit) * 100);
     this.info(`Token count: ${count}/${limit} (${percentage}%)`);
@@ -136,7 +126,6 @@ class LoggerImpl {
 
   logScanStart(scope: string): void {
     this.info(`Starting scan for scope: ${scope}`);
-    this.debug(`Scan started at: ${new Date().toISOString()}`);
   }
 
   logScanComplete(fileCount: number, duration: number): void {
