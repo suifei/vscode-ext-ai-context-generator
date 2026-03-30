@@ -1,0 +1,15 @@
+# AI Context Generator Ignore Patterns
+# Syntax follows .gitignore rules
+# This file works together with the global aiContext.ignorePatterns setting
+#
+# You can add project-specific patterns below.
+# Lines starting with # are comments.
+#
+
+.git/**
+build/**
+coverage/**
+node_modules/**
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
