@@ -8,7 +8,7 @@ Generate structured Markdown context from your project files for AI assistant in
 
 ### Smart File Filtering
 - Supports `.aicontextignore` file (same syntax as `.gitignore`) to exclude unwanted files
-- Pre-configured to ignore `node_modules`, `dist`, `build`, and other common build artifacts
+- Pre-configured to ignore `node_modules`, `build`, `.git`, and other common files
 
 ### Intelligent Content Processing
 - **Code files**: Full content with syntax highlighting
@@ -20,7 +20,7 @@ Generate structured Markdown context from your project files for AI assistant in
 
 ### Flexible Output Options
 - **Clipboard**: Quick copy to paste into AI chat
-- **File**: Save as Markdown file for later use
+- **File**: Save as Markdown file to workspace root (auto-opens after save)
 - **Preview**: Open in VSCode for review before using
 
 ### Token Management
@@ -33,24 +33,14 @@ Generate structured Markdown context from your project files for AI assistant in
 - Support for custom templates in `.ai_context_templates/` directory
 - Template variables: `$PROJECT_NAME`, `$DIR_TREE`, `$FILE_CONTENTS`, `$TOKEN_COUNT`, `$FILE_COUNT`, `$TIMESTAMP`
 
-### WebView Sidebar
-- Visual interface for easy configuration
-- Quick scope selection (workspace/folder/selected files)
-- Real-time token count display
-
-## Keyboard Shortcuts
-
-| Command | Windows/Linux | macOS |
-|---------|---------------|-------|
-| Generate for Workspace | `Ctrl+Shift+Alt+C` | `Cmd+Shift+Alt+C` |
-| Generate for Folder | `Ctrl+Shift+Alt+F` | `Cmd+Shift+Alt+F` |
-| Generate for Selected Files | `Ctrl+Shift+Alt+S` | `Cmd+Shift+Alt+S` |
-
 ## Quick Start
 
 1. Install the extension
-2. Open your project
-3. Press `Ctrl+Shift+Alt+C` to generate context for your entire workspace
+2. Right-click on any file or folder in Explorer
+3. Select an output option:
+   - **Generate AI Context to Clipboard** - Copy directly
+   - **Generate AI Context to File** - Save to workspace root
+   - **Generate AI Context to Preview** - Open in new tab
 4. Paste into ChatGPT, Claude, or your preferred AI assistant
 
 ## Configuration
@@ -61,9 +51,8 @@ Create a `.aicontextignore` file in your project root:
 
 ```
 node_modules/**
-dist/**
+build/**
 *.min.js
-*.min.css
 .env
 ```
 
@@ -72,10 +61,12 @@ dist/**
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | `aiContext.maxFileSize` | number | 51200 | File size threshold for outline mode (bytes) |
-| `aiContext.maxTokens` | number | 128000 | Token warning threshold |
-| `aiContext.defaultOutputTarget` | enum | clipboard | Output: clipboard, file, or preview |
+| `aiContext.maxTokens` | number | 128000 | Token warning threshold for local counting (does NOT call any AI API) |
+| `aiContext.outputFileName` | string | ai-context.md | Output filename when saving to workspace root |
 | `aiContext.tokenEstimation` | enum | tiktoken | Counting method: tiktoken or simple |
 | `aiContext.showTreeEmoji` | boolean | true | Show emoji in directory tree |
+| `aiContext.sensitiveKeyPatterns` | array | [...] | Patterns for detecting sensitive keys (auto-filtered for security) |
+| `aiContext.ignorePatterns` | array | [...] | Additional ignore patterns |
 
 ## Use Cases
 
@@ -91,7 +82,7 @@ dist/**
 > 📊 **Context Statistics**
 > - Total Tokens: ~15.2K / 128K
 > - Files Included: 23 (2 as outline)
-> - Generated at: 2025-03-30T12:34:56.789Z
+> - Generated at: 2026-03-30T12:34:56.789Z
 
 # Project Structure
 
@@ -137,7 +128,7 @@ export const formatDate = (date: Date): string => { ... }
 
 ### 智能文件过滤
 - 支持 `.aicontextignore` 文件（与 `.gitignore` 语法相同）
-- 预配置忽略 `node_modules`、`dist`、`build` 等常见构建产物
+- 预配置忽略 `node_modules`、`build`、`.git` 等常见文件
 
 ### 智能内容处理
 - **代码文件**：语法高亮显示完整内容
@@ -149,16 +140,43 @@ export const formatDate = (date: Date): string => { ... }
 
 ### 灵活输出
 - **剪贴板**：快速复制粘贴到 AI 对话
-- **文件**：保存为 Markdown 文件供后续使用
+- **文件**：保存到工作区根目录（保存后自动打开）
 - **预览**：在 VSCode 中打开预览
 
-### 快捷键
+## 快速开始
 
-| 命令 | Windows/Linux | macOS |
-|------|---------------|-------|
-| 为工作区生成 | `Ctrl+Shift+Alt+C` | `Cmd+Shift+Alt+C` |
-| 为文件夹生成 | `Ctrl+Shift+Alt+F` | `Cmd+Shift+Alt+F` |
-| 为选中文件生成 | `Ctrl+Shift+Alt+S` | `Cmd+Shift+Alt+S` |
+1. 安装扩展
+2. 在资源管理器中右键点击任意文件或文件夹
+3. 选择输出选项：
+   - **生成 AI 上下文到剪切板** - 直接复制
+   - **生成 AI 上下文到文件** - 保存到工作区根目录
+   - **生成 AI 上下文到预览窗口** - 在新标签页打开
+4. 粘贴到 ChatGPT、Claude 或您偏好的 AI 助手
+
+## 配置
+
+### 创建 .aicontextignore
+
+在项目根目录创建 `.aicontextignore` 文件：
+
+```
+node_modules/**
+build/**
+*.min.js
+.env
+```
+
+### 设置
+
+| 设置 | 类型 | 默认值 | 描述 |
+|------|------|--------|------|
+| `aiContext.maxFileSize` | number | 51200 | 大纲模式文件大小阈值（字节） |
+| `aiContext.maxTokens` | number | 128000 | 本地 Token 计数警告阈值（不会调用任何 AI 接口） |
+| `aiContext.outputFileName` | string | ai-context.md | 保存到工作区根目录的文件名 |
+| `aiContext.tokenEstimation` | enum | tiktoken | 计数方法：tiktoken 或 simple |
+| `aiContext.showTreeEmoji` | boolean | true | 在目录树中显示 emoji |
+| `aiContext.sensitiveKeyPatterns` | array | [...] | 检测敏感键的模式（为安全自动过滤） |
+| `aiContext.ignorePatterns` | array | [...] | 额外的忽略模式 |
 
 ## 隐私
 

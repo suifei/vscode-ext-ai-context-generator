@@ -141,7 +141,6 @@ describe('TokenCounter', () => {
         autoDetectLanguage: true,
         ignorePatterns: [],
         binaryFilePatterns: [],
-        defaultOutputTarget: 'clipboard' as const,
         outputFileName: 'ai-context.md',
         showTreeEmoji: true,
         parallelFileReads: 50,

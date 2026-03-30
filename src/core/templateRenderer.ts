@@ -4,6 +4,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { Logger } from './logger';
 import { TEMPLATES_DIR, DEFAULT_TEMPLATE_NAME } from '../config/constants';
 
 export interface TemplateVariables {
@@ -48,7 +49,7 @@ export class TemplateRenderer {
       try {
         return fs.readFileSync(customPath, 'utf-8');
       } catch (error: unknown) {
-        console.warn(`Failed to read template: ${error}`);
+        Logger.warn(`Failed to read template: ${error}`);
       }
     }
 
@@ -74,7 +75,7 @@ export class TemplateRenderer {
           }
         }
       } catch (error: unknown) {
-        console.warn(`Failed to read templates: ${error}`);
+        Logger.warn(`Failed to read templates: ${error}`);
       }
     }
 

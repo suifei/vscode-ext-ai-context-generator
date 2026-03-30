@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "out/test",
+    "rootDir": "./test",
+    "types": ["node", "mocha", "chai"],
+    "composite": true
+  },
+  "include": ["test/**/*"],
+  "references": [
+    { "path": "." }
+  ]
+}

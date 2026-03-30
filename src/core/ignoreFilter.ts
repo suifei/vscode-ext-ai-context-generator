@@ -5,14 +5,16 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import Ignore from 'ignore';
-import { DEFAULT_CONFIG, IGNORE_FILE_NAME } from '../config/constants';
+import { IGNORE_FILE_NAME } from '../config/constants';
 
 export class IgnoreFilter {
   private ignoreInstance: ReturnType<typeof Ignore>;
   private readonly workspaceRoot: string;
+  private readonly binaryPatterns: string[];
 
-  constructor(workspaceRoot: string, additionalPatterns: string[] = []) {
+  constructor(workspaceRoot: string, additionalPatterns: string[] = [], binaryPatterns: string[] = []) {
     this.workspaceRoot = workspaceRoot;
+    this.binaryPatterns = binaryPatterns;
     this.ignoreInstance = Ignore();
     this.loadPatterns(additionalPatterns);
   }
@@ -33,10 +35,13 @@ export class IgnoreFilter {
     }
 
     this.ignoreInstance = this.ignoreInstance.add(additionalPatterns);
-    this.ignoreInstance = this.ignoreInstance.add(DEFAULT_CONFIG.binaryFilePatterns);
+    this.ignoreInstance = this.ignoreInstance.add(this.binaryPatterns);
   }
 
-  reload(additionalPatterns: string[] = []): void {
+  reload(additionalPatterns: string[] = [], binaryPatterns?: string[]): void {
+    if (binaryPatterns !== undefined) {
+      this.binaryPatterns.splice(0, this.binaryPatterns.length, ...binaryPatterns);
+    }
     this.loadPatterns(additionalPatterns);
   }
 

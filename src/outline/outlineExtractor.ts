@@ -1,32 +1,47 @@
 /**
- * Abstract interface for AST-based outline extraction
+ * Outline extraction using VSCode's symbol provider
+ * Refactored to use shared formatting constants
  */
 
 import * as vscode from 'vscode';
+import { Logger } from '../core/logger';
+import {
+  OUTLINE_SEPARATOR,
+  SECTION_TITLES,
+  formatSectionHeader,
+  truncateText,
+  extractCodeSignature,
+} from './formatConstants';
 
-export interface SymbolInfo {
-  name: string;
-  kind: string;
-  detail?: string;
-  range: vscode.Range;
-  children?: SymbolInfo[];
-}
-
-export abstract class OutlineExtractor {
+export class OutlineExtractor {
   /**
    * Extract outline from document
    * Returns formatted string with type definitions, functions, etc.
    */
-  abstract extract(document: vscode.TextDocument): Promise<string>;
+  async extract(document: vscode.TextDocument): Promise<string> {
+    try {
+      const symbols = await this.getSymbols(document);
+      return this.formatSymbols(symbols, document);
+    } catch (error) {
+      Logger.warn(`Outline extraction failed for ${document.uri.fsPath}:`, error);
+      return '';
+    }
+  }
 
   /**
    * Get symbols from document using VSCode's symbol provider
    */
   protected async getSymbols(document: vscode.TextDocument): Promise<vscode.SymbolInformation[]> {
-    return await vscode.commands.executeCommand(
-      'vscode.executeDocumentSymbolProvider',
-      document.uri
-    ) || [];
+    try {
+      const result = await vscode.commands.executeCommand(
+        'vscode.executeDocumentSymbolProvider',
+        document.uri
+      );
+      return (result as vscode.SymbolInformation[]) || [];
+    } catch (error) {
+      Logger.debug(`LSP symbol extraction failed for ${document.uri.fsPath}:`, error);
+      return [];
+    }
   }
 
   /**
@@ -36,16 +51,13 @@ export abstract class OutlineExtractor {
     const lines: string[] = [];
 
     // Group by symbol kind
-    const types = symbols.filter(s => s.kind === vscode.SymbolKind.Class || s.kind === vscode.SymbolKind.Interface || s.kind === vscode.SymbolKind.Struct);
-    const functions = symbols.filter(s => s.kind === vscode.SymbolKind.Function || s.kind === vscode.SymbolKind.Method);
-    const variables = symbols.filter(s => s.kind === vscode.SymbolKind.Variable || s.kind === vscode.SymbolKind.Constant);
-    const imports = symbols.filter(s => s.kind === vscode.SymbolKind.Namespace || s.kind === vscode.SymbolKind.Module);
+    const types = symbols.filter(s => this.isTypeSymbol(s.kind));
+    const functions = symbols.filter(s => this.isFunctionSymbol(s.kind));
+    const imports = symbols.filter(s => this.isNamespaceSymbol(s.kind));
 
-    // Add types
+    // Add types section
     if (types.length > 0) {
-      lines.push(`// ═══════════════════════════════════════`);
-      lines.push(`// TYPES`);
-      lines.push(`// ═══════════════════════════════════════`);
+      lines.push(formatSectionHeader(SECTION_TITLES.TYPES));
       for (const type of types) {
         const line = this.getSymbolLine(type, document);
         lines.push(`// ${line}`);
@@ -53,11 +65,9 @@ export abstract class OutlineExtractor {
       lines.push('');
     }
 
-    // Add functions
+    // Add functions section
     if (functions.length > 0) {
-      lines.push(`// ═══════════════════════════════════════`);
-      lines.push(`// FUNCTIONS`);
-      lines.push(`// ═══════════════════════════════════════`);
+      lines.push(formatSectionHeader(SECTION_TITLES.FUNCTIONS));
       for (const fn of functions) {
         const line = this.getSymbolLine(fn, document);
         lines.push(`// ${line}`);
@@ -65,11 +75,9 @@ export abstract class OutlineExtractor {
       lines.push('');
     }
 
-    // Add imports
+    // Add imports section
     if (imports.length > 0) {
-      lines.push(`// ═══════════════════════════════════════`);
-      lines.push(`// IMPORTS/DEPENDENCIES`);
-      lines.push(`// ═══════════════════════════════════════`);
+      lines.push(formatSectionHeader(SECTION_TITLES.IMPORTS));
       for (const imp of imports) {
         lines.push(`// ${imp.name}`);
       }
@@ -83,9 +91,35 @@ export abstract class OutlineExtractor {
    * Get a readable line for a symbol
    */
   protected getSymbolLine(symbol: vscode.SymbolInformation, document: vscode.TextDocument): string {
-    // SymbolInformation has location.range, not range directly
     const range = symbol.location.range;
     const line = document.lineAt(range.start.line).text.trim();
-    return line.substring(0, 150);
+    return truncateText(extractCodeSignature(line), 150);
+  }
+
+  /**
+   * Check if symbol kind is a type
+   */
+  protected isTypeSymbol(kind: vscode.SymbolKind): boolean {
+    return kind === vscode.SymbolKind.Class ||
+           kind === vscode.SymbolKind.Interface ||
+           kind === vscode.SymbolKind.Struct ||
+           kind === vscode.SymbolKind.Enum;
+  }
+
+  /**
+   * Check if symbol kind is a function
+   */
+  protected isFunctionSymbol(kind: vscode.SymbolKind): boolean {
+    return kind === vscode.SymbolKind.Function ||
+           kind === vscode.SymbolKind.Method ||
+           kind === vscode.SymbolKind.Constructor;
+  }
+
+  /**
+   * Check if symbol kind is a namespace
+   */
+  protected isNamespaceSymbol(kind: vscode.SymbolKind): boolean {
+    return kind === vscode.SymbolKind.Namespace ||
+           kind === vscode.SymbolKind.Module;
   }
 }

@@ -154,17 +154,6 @@ export function getLanguageFromExtension(extension: string): string | undefined 
 }
 
 /**
- * Get language info from file extension
- */
-export function getLanguageInfo(extension: string): LanguageInfo | undefined {
-  const langId = getLanguageFromExtension(extension);
-  if (langId) {
-    return LANGUAGE_MAP[langId];
-  }
-  return undefined;
-}
-
-/**
  * Get language name from file path
  */
 export function getLanguageFromPath(filePath: string): string | undefined {

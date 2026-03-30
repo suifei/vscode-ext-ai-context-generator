@@ -83,8 +83,9 @@ export class DirTreeGenerator {
     depth: number
   ): void {
     if (node.name === '') {
-      Object.entries(node.children).forEach(([_, child], index) => {
-        this.renderNode(child, prefix, index === Object.entries(node.children).length - 1, lines, depth);
+      const entries = Object.entries(node.children);
+      entries.forEach(([_, child], index) => {
+        this.renderNode(child, prefix, index === entries.length - 1, lines, depth);
       });
       return;
     }
@@ -107,9 +108,10 @@ export class DirTreeGenerator {
     lines.push(line);
 
     if (node.isDirectory && Object.keys(node.children).length > 0) {
+      const entries = Object.entries(node.children);
       const newPrefix = prefix + (isLast ? ' ' : TREE_CHARS.vertical) + ' ';
-      Object.entries(node.children).forEach(([_, child], index) => {
-        this.renderNode(child, newPrefix, index === Object.keys(node.children).length - 1, lines, depth + 1);
+      entries.forEach(([_, child], index) => {
+        this.renderNode(child, newPrefix, index === entries.length - 1, lines, depth + 1);
       });
     }
   }

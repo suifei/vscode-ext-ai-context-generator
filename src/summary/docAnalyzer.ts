@@ -2,7 +2,6 @@
  * Markdown/doc analyzer: heading outline, keyword extraction
  */
 
-import * as path from 'path';
 import { FileReadResult } from '../core/fileReader';
 import { AIContextConfig, WARNING_EMOJI } from '../config/constants';
 import { getRelativePath } from '../utils/fileUtils';

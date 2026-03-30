@@ -1,5 +1,8 @@
 /**
  * QuickPick for output selection
+ *
+ * @deprecated This file is kept for command palette support but direct commands are preferred.
+ * The extension provides three direct commands (clipboard, file, preview) for better UX.
  */
 
 import * as vscode from 'vscode';
@@ -12,7 +15,7 @@ export interface OutputPickerOptions {
 
 export class OutputPicker {
   /**
-   * Show output target picker
+   * Show output target picker (used by command palette)
    */
   static async show(options: OutputPickerOptions = {}): Promise<OutputTarget | undefined> {
     const { defaultTarget = 'clipboard', title = 'Select output destination' } = options;
@@ -43,31 +46,14 @@ export class OutputPicker {
   }
 
   /**
-   * Quick clipboard output
+   * Copy content to clipboard
    */
   static async copyToClipboard(content: string): Promise<void> {
     await vscode.env.clipboard.writeText(content);
   }
 
   /**
-   * Quick file output
-   */
-  static async saveToFile(content: string, defaultPath: string): Promise<vscode.Uri | undefined> {
-    const uri = await vscode.window.showSaveDialog({
-      defaultUri: vscode.Uri.file(defaultPath),
-      filters: { Markdown: ['md'] },
-    });
-
-    if (uri) {
-      const encoder = new TextEncoder();
-      await vscode.workspace.fs.writeFile(uri, encoder.encode(content));
-    }
-
-    return uri;
-  }
-
-  /**
-   * Quick preview output
+   * Show content in preview editor
    */
   static async showPreview(content: string): Promise<vscode.TextDocument> {
     const doc = await vscode.workspace.openTextDocument({

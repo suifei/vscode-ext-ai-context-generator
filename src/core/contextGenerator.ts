@@ -4,6 +4,7 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import { IgnoreFilter } from './ignoreFilter';
 import { FileScanner } from './fileScanner';
 import { DirTreeGenerator } from './dirTreeGenerator';
@@ -12,8 +13,9 @@ import { TokenCounter } from './tokenCounter';
 import { TemplateRenderer, TemplateVariables } from './templateRenderer';
 import { SmartSummarizer } from './smartSummarizer';
 import { Logger } from './logger';
-import { AIContextConfig, DEFAULT_CONFIG, Scope, OutputTarget } from '../config/constants';
-import { getRelativePath } from '../utils/fileUtils';
+import { AIContextConfig, DEFAULT_CONFIG, Scope, OutputTarget, WARNING_EMOJI } from '../config/constants';
+import { getRelativePath, formatFileSize } from '../utils/fileUtils';
+import { OutlineExtractorRegistry } from '../outline/registry';
 
 export interface GenerationOptions {
   scope: Scope;
@@ -30,7 +32,7 @@ export interface GenerationResult {
   exceededLimit: boolean;
 }
 
-const SETTINGS_KEYS = {
+const SETTINGS_KEYS: Record<keyof AIContextConfig, string> = {
   maxFileSize: 'number',
   maxTokens: 'number',
   textPreviewLength: 'number',
@@ -41,12 +43,15 @@ const SETTINGS_KEYS = {
   autoDetectLanguage: 'boolean',
   ignorePatterns: 'array',
   binaryFilePatterns: 'array',
-  defaultOutputTarget: 'string',
   outputFileName: 'string',
   showTreeEmoji: 'boolean',
   tokenEstimation: 'string',
   parallelFileReads: 'number',
-} as const;
+  outlineDetail: 'string',
+  outlineIncludePrivate: 'boolean',
+  outlineExtractComments: 'boolean',
+  outlineMaxItems: 'number',
+};
 
 export class ContextGenerator {
   private ignoreFilter: IgnoreFilter;
@@ -62,7 +67,7 @@ export class ContextGenerator {
     this.workspaceRoot = workspaceRoot;
     this.config = { ...DEFAULT_CONFIG, ...config };
 
-    this.ignoreFilter = new IgnoreFilter(workspaceRoot, this.config.ignorePatterns);
+    this.ignoreFilter = new IgnoreFilter(workspaceRoot, this.config.ignorePatterns, this.config.binaryFilePatterns);
     this.fileScanner = new FileScanner(this.ignoreFilter);
     this.fileReader = new FileReader(this.config, workspaceRoot);
     this.tokenCounter = new TokenCounter(this.config.tokenEstimation);
@@ -89,32 +94,36 @@ export class ContextGenerator {
       return this.emptyResult();
     }
 
-    // Step 2: Read file contents
-    Logger.debug('Step 2: Reading file contents...');
+    // Step 2: Determine tree root (common parent of selected files)
+    const treeRoot = options.selectedPaths
+      ? this.findCommonParent(options.selectedPaths)
+      : this.workspaceRoot;
+
+    // Step 3: Read file contents
+    Logger.debug('Step 3: Reading file contents...');
     const fileResults = await this.fileReader.readFiles(files);
     Logger.debug(`File reading complete: ${fileResults.length} files processed`);
 
-    // Step 3: Generate directory tree
-    Logger.debug('Step 3: Generating directory tree...');
-    const dirTree = new DirTreeGenerator(this.workspaceRoot, {
+    // Step 4: Generate directory tree
+    Logger.debug('Step 4: Generating directory tree...');
+    const dirTree = new DirTreeGenerator(treeRoot, {
       showEmoji: this.config.showTreeEmoji,
       selectedFiles: new Set(files),
     }).generate(files);
 
-    // Step 4: Process files
-    Logger.debug('Step 4: Processing files (summaries/outlines)...');
-    const processedContents = await this.processFiles(fileResults);
-    const fileContents = processedContents.join('\n\n');
+    // Step 5: Process files (summaries/outlines)
+    Logger.debug('Step 5: Processing files (summaries/outlines)...');
+    const { contents, outlineCount } = await this.processFiles(fileResults);
+    const fileContents = contents.join('\n\n');
 
-    // Step 5: Calculate tokens
-    Logger.debug('Step 5: Calculating tokens...');
+    // Step 6: Calculate tokens
+    Logger.debug('Step 6: Calculating tokens...');
     const tempContent = this.buildTemporaryContent(dirTree, fileContents);
     const tokenCount = this.tokenCounter.count(tempContent);
     Logger.debug(`Token count: ${tokenCount} (limit: ${this.config.maxTokens})`);
 
-    // Step 6: Render template
-    Logger.debug('Step 6: Rendering template...');
-    const outlineCount = fileResults.filter(r => r.isTruncated).length;
+    // Step 7: Render template
+    Logger.debug('Step 7: Rendering template...');
     const content = this.renderTemplate(options.templateName, {
       dirTree,
       fileContents,
@@ -123,6 +132,7 @@ export class ContextGenerator {
       outlineCount,
       selectedPaths: options.selectedPaths,
       scope: options.scope,
+      treeRoot,
     });
 
     Logger.info(`Generation complete: ${files.length} files, ${tokenCount} tokens, ${outlineCount} outlines`);
@@ -146,8 +156,9 @@ export class ContextGenerator {
     };
   }
 
-  private async processFiles(fileResults: FileReadResult[]): Promise<string[]> {
+  private async processFiles(fileResults: FileReadResult[]): Promise<{ contents: string[]; outlineCount: number }> {
     const contents: string[] = [];
+    let outlineCount = 0;
 
     for (const result of fileResults) {
       if (result.isBinary) {
@@ -155,6 +166,15 @@ export class ContextGenerator {
         continue;
       }
 
+      // Check if file should use outline extraction
+      if (this.shouldUseOutlineExtractor(result)) {
+        const outline = await this.extractOutline(result);
+        contents.push(outline);
+        outlineCount++;
+        continue;
+      }
+
+      // Use smart summarizer for supported file types
       if (result.isTruncated || this.smartSummarizer.shouldSummarize(result.path)) {
         contents.push(await this.smartSummarizer.summarize(result));
       } else {
@@ -162,7 +182,38 @@ export class ContextGenerator {
       }
     }
 
-    return contents;
+    return { contents, outlineCount };
+  }
+
+  /**
+   * Check if a file should use outline extraction
+   */
+  private shouldUseOutlineExtractor(result: FileReadResult): boolean {
+    // Only use outline for large files (isTruncated)
+    if (!result.isTruncated) return false;
+
+    // Check if language supports outline extraction
+    return OutlineExtractorRegistry.hasASTSupport(result.language || '');
+  }
+
+  /**
+   * Extract outline from a document using OutlineExtractor
+   */
+  private async extractOutline(result: FileReadResult): Promise<string> {
+    const uri = vscode.Uri.file(result.path);
+    const document = await vscode.workspace.openTextDocument(uri);
+
+    try {
+      const outline = await OutlineExtractorRegistry.extractOutline(document);
+      const relativePath = getRelativePath(this.workspaceRoot, result.path);
+      const fileSize = formatFileSize(result.size);
+      const warning = `${WARNING_EMOJI} Overview — ${fileSize}, structure outline`;
+      return `// File: ${relativePath} (${warning})\n// Language: ${result.language}\n\n${outline}`;
+    } catch (error) {
+      // Fallback to smart summarizer on error
+      Logger.warn(`Outline extraction failed for ${result.path}, falling back to smart summarizer:`, error);
+      return await this.smartSummarizer.summarize(result);
+    }
   }
 
   private buildTemporaryContent(dirTree: string, fileContents: string): string {
@@ -179,6 +230,7 @@ export class ContextGenerator {
       outlineCount: number;
       selectedPaths?: string[];
       scope: Scope;
+      treeRoot: string;
     }
   ): string {
     const template = this.templateRenderer.loadTemplate(
@@ -186,9 +238,9 @@ export class ContextGenerator {
     );
 
     const vars: TemplateVariables = {
-      PROJECT_NAME: path.basename(this.workspaceRoot),
+      PROJECT_NAME: path.basename(data.treeRoot),
       DIR_TREE: data.dirTree,
-      FILE_LIST: filesToList(this.workspaceRoot, data.files),
+      FILE_LIST: filesToList(data.treeRoot, data.files),
       FILE_CONTENTS: data.fileContents,
       TOKEN_COUNT: this.tokenCounter.formatTokenCount(data.tokenCount),
       TOKEN_LIMIT: this.tokenCounter.formatTokenCount(this.config.maxTokens),
@@ -196,7 +248,7 @@ export class ContextGenerator {
       OUTLINE_COUNT: data.outlineCount.toString(),
       TIMESTAMP: new Date().toISOString(),
       SELECTED_FILES: data.selectedPaths
-        ? data.selectedPaths.map(p => getRelativePath(this.workspaceRoot, p)).join(', ')
+        ? data.selectedPaths.map(p => getRelativePath(data.treeRoot, p)).join(', ')
         : '',
       SCOPE: data.scope,
       WORKSPACE_PATH: this.workspaceRoot,
@@ -205,25 +257,80 @@ export class ContextGenerator {
     return this.templateRenderer.render(template, vars);
   }
 
+  /**
+   * Find common parent directory of selected paths
+   * Returns the workspace root if paths span multiple top-level directories
+   */
+  private findCommonParent(selectedPaths: string[]): string {
+    if (selectedPaths.length === 0) return this.workspaceRoot;
+    if (selectedPaths.length === 1) {
+      const p = selectedPaths[0];
+      try {
+        const stats = fs.statSync(p);
+        return stats.isDirectory() ? p : path.dirname(p);
+      } catch {
+        return path.dirname(p);
+      }
+    }
+
+    // Find common prefix
+    const parts = selectedPaths.map(p => p.split(path.sep));
+    let commonLength = 0;
+
+    const minParts = Math.min(...parts.map(p => p.length));
+    for (let i = 0; i < minParts; i++) {
+      const current = parts[0][i];
+      if (parts.every(p => p[i] === current)) {
+        commonLength = i + 1;
+      } else {
+        break;
+      }
+    }
+
+    // If no common parts, use workspace root
+    if (commonLength === 0) return this.workspaceRoot;
+
+    const commonParent = parts[0].slice(0, commonLength).join(path.sep);
+
+    // Ensure common parent is within workspace
+    if (commonParent.startsWith(this.workspaceRoot)) {
+      return commonParent;
+    }
+
+    return this.workspaceRoot;
+  }
+
   updateConfig(config: Partial<AIContextConfig>): void {
     this.config = { ...this.config, ...config };
-    this.ignoreFilter.reload(this.config.ignorePatterns);
+    this.ignoreFilter.reload(this.config.ignorePatterns, this.config.binaryFilePatterns);
+    // Update components that depend on config
+    this.fileReader = new FileReader(this.config, this.workspaceRoot);
+    this.smartSummarizer = new SmartSummarizer(this.config, this.workspaceRoot);
+    if (config.tokenEstimation !== undefined) {
+      this.tokenCounter = new TokenCounter(this.config.tokenEstimation);
+    }
   }
 
   reloadFromSettings(): void {
     const vscodeConfig = vscode.workspace.getConfiguration('aiContext');
     const config = this.loadConfigFromSettings(vscodeConfig);
     this.config = { ...DEFAULT_CONFIG, ...config };
-    this.ignoreFilter.reload(this.config.ignorePatterns);
+    this.ignoreFilter.reload(this.config.ignorePatterns, this.config.binaryFilePatterns);
+    // Update components that depend on config
+    this.fileReader = new FileReader(this.config, this.workspaceRoot);
+    this.smartSummarizer = new SmartSummarizer(this.config, this.workspaceRoot);
+    this.tokenCounter = new TokenCounter(this.config.tokenEstimation);
   }
 
   private loadConfigFromSettings(vscodeConfig: vscode.WorkspaceConfiguration): Partial<AIContextConfig> {
     const result: Partial<AIContextConfig> = {};
+    const configKeys = SETTINGS_KEYS as Record<keyof AIContextConfig, string>;
 
-    for (const key of Object.keys(SETTINGS_KEYS)) {
-      const defaultValue = DEFAULT_CONFIG[key as keyof AIContextConfig];
+    for (const key of Object.keys(configKeys)) {
+      const typedKey = key as keyof AIContextConfig;
+      const defaultValue = DEFAULT_CONFIG[typedKey];
       const value = vscodeConfig.get(key, defaultValue);
-      (result as any)[key] = value;
+      (result as Partial<AIContextConfig>)[typedKey] = value as never;
     }
 
     return result;

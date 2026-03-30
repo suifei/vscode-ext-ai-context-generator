@@ -7,10 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Enhanced Outline Module**: Complete rewrite of outline extraction system
+  - New `ASTExtractor` using hierarchical DocumentSymbol API
+  - Improved error handling with graceful fallbacks
+  - Document caching for better performance (5s TTL, 50 entry limit)
+  - Unified output formatter for consistent formatting
+- **Outline Configuration Options**:
+  - `aiContext.outlineDetail` - Control detail level (basic/standard/detailed)
+  - `aiContext.outlineIncludePrivate` - Include private members in outline
+  - `aiContext.outlineExtractComments` - Extract comments and docstrings
+  - `aiContext.outlineMaxItems` - Max items per section (10-200)
+- **Comprehensive Unit Tests**: Added 60+ tests for outline module
+
+### Changed
+- **Three-Tier Extraction Strategy**:
+  1. ASTExtractor (hierarchical symbols) for supported languages
+  2. OutlineExtractor (flat symbols) as intermediate fallback
+  3. RegexFallback (pattern matching) as final fallback
+- **Improved Registry**: Better language detection and automatic fallback logic
+- **Enhanced Output Format**:
+  - Shows member counts per section
+  - Displays visibility modifiers (private, protected, public)
+  - Shows line numbers and code signatures
+  - Hierarchical type structure with nested members
+
+### Fixed
+- Outline extraction no longer fails silently when LSP is unavailable
+- Better handling of large files with partial symbol information
+- Consistent output format between LSP and regex fallback
+
 ### Planned
 - Additional language support for AST outline (Ruby, Swift, PHP, etc.)
 - Custom template editor UI
 - Export to other formats (PDF, HTML)
+
+## [1.2.0] - 2026-03-30
+
+### Added
+- **Direct Output Commands**: Three dedicated commands for immediate output to clipboard, file, or preview - no more QuickPick dialog
+- **File Overwrite Confirmation**: Modal dialog when saving to existing file
+- **Auto-open Generated File**: Automatically opens the generated file after saving
+
+### Changed
+- **Simplified Right-Click Menu**: Direct access to output targets without intermediate selection
+  - "Generate AI Context to Clipboard" - copies directly
+  - "Generate AI Context to File" - saves to workspace root
+  - "Generate AI Context to Preview" - opens in new tab
+- **Simplified Configuration**: Removed `defaultOutputTarget` setting (no longer needed)
+- **Cleaner Ignore Patterns**: Removed `dist/**`, `*.min.js`, `*.min.css` from default patterns
+- **Improved Configuration Descriptions**:
+  - `maxTokens`: Clarified it's local counting, not calling AI API
+  - `sensitiveKeyPatterns`: Clarified auto-filtering for security
+  - `outputFileName`: Clarified save location and overwrite behavior
+
+### Removed
+- `aiContext.defaultOutputTarget` configuration setting
+
+## [1.1.0] - 2026-03-30
+
+### Added
+- **Smart Context Detection**: Directory tree now starts from the common parent of selected files/folders, not always from workspace root
+- **Explorer Context Menu**: Simplified right-click menu with submenu organization
+- **Intelligent Generate Command**: Single command that automatically handles files, folders, and multi-selection
+- **Large File Outline Extraction**: For code files exceeding size threshold (>50KB), AST-based structure outline is now automatically generated instead of regex-based analysis
+
+### Changed
+- **Simplified Menu Structure**:
+  - Removed separate "Workspace", "Folder", and "Selected" commands
+  - Unified into single "Generate AI Context" command
+  - Added submenu for better organization
+- **Removed WebView Sidebar**: Simplified extension by removing the sidebar panel (less invasive, better UX)
+- **Removed Keyboard Shortcuts**: Kept the extension simpler with no default keybindings
+
+### Fixed
+- Directory tree now correctly shows only the selected folder's structure when a subfolder is chosen
+- Project name in template now reflects the selected folder instead of always showing workspace name
+- **Large file processing**: JavaScript/TypeScript files now use AST-based outline extraction instead of falling back to generic regex analyzer
+- **Outline count accuracy**: `$OUTLINE_COUNT` now correctly counts only files that actually generated structure outlines
+- **DRY violation**: Removed duplicate file headers from outline extractors
+
+### Code Quality
+- Reduced codebase by 375 lines (-69% from removed components)
+- Followed DRY, KISS, and YAGNI principles
+- All 143 unit tests passing
 
 ## [1.0.0] - 2025-03-30
 

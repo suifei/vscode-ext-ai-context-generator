@@ -1,10 +1,10 @@
 # VSCode AI Context Generator — 产品需求设计文档 (PRD)
 
-> **版本**: v1.2
+> **版本**: v1.3
 > **日期**: 2026-03-30
-> **状态**: 开发完成 100%，Phase 4 已完成 ✅
+> **状态**: 开发完成 100%，Phase 5 已完成 ✅
 > **插件标识**: `ai-context-generator`
-> **当前代码版本**: v1.0.0
+> **当前代码版本**: v1.2.0
 
 ---
 
@@ -44,8 +44,8 @@ AI Context Generator 正是为解决这一痛点而设计的 VSCode 插件。它
 ├──────────────┼──────────────┼───────────────────────────┤
 │ · 右键菜单    │ · 文件过滤    │ · 复制到剪贴板            │
 │ · 命令面板    │   (.aicontextignore)  │ · 保存为 .md 文件       │
-│ · 侧边栏面板  │ · 目录树生成   │ · VSCode 新 Tab 预览     │
-│ · 快捷键     │ · 文件读取    │                           │
+│              │ · 目录树生成   │ · VSCode 新 Tab 预览     │
+│              │ · 文件读取    │                           │
 │              │ · AST 大纲    │                           │
 │              │ · Token 计算   │                           │
 │              │ · 模板渲染    │                           │
@@ -55,7 +55,6 @@ AI Context Generator 正是为解决这一痛点而设计的 VSCode 插件。它
 │ · VSCode Settings (JSON)                                 │
 │ · .aicontextignore (项目级过滤)                           │
 │ · .ai_context_templates/ (自定义模板)                      │
-│ · 持久化状态 (上次选择、模板偏好)                           │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -65,17 +64,21 @@ AI Context Generator 正是为解决这一痛点而设计的 VSCode 插件。它
 
 ### 3.1 触发方式
 
-插件提供四种互补的触发方式，覆盖不同的使用习惯和场景：
+插件提供两种触发方式，简洁高效：
 
 #### 3.1.1 右键菜单（资源管理器上下文菜单）
 
-在 VSCode 文件资源管理器中，选中文件或文件夹后右键，显示上下文菜单项：
+在 VSCode 文件资源管理器中，选中文件或文件夹后右键，直接选择输出目标：
 
-- **选中文件时**：`🤖 AI Context: Generate from Selected Files`
-- **选中文件夹时**：`🤖 AI Context: Generate from Selected Folder`
-- **单击空白区域/根目录时**：`🤖 AI Context: Generate from Entire Workspace`
+- **Generate AI Context to Clipboard** - 直接复制到剪贴板
+- **Generate AI Context to File** - 保存到工作区根目录（`ai-context.md`）
+- **Generate AI Context to Preview** - 在新编辑器标签页预览
 
-> **注意**：右键菜单仅在资源管理器中可用，编辑器内的右键菜单暂不添加入口（避免菜单膨胀）。
+菜单还包含配置子菜单：
+- **Open AI Context Generator Logs** - 查看调试日志
+- **Configure AI Context Generator** - 快速设置访问
+
+> **v1.2 更新**：右键菜单直接提供三个输出目标命令，省去中间选择步骤，提升用户体验。
 
 #### 3.1.2 命令面板（Command Palette）
 
@@ -83,26 +86,14 @@ AI Context Generator 正是为解决这一痛点而设计的 VSCode 插件。它
 
 | 命令 ID | 显示名称 | 说明 |
 |---------|---------|------|
-| `aiContext.generate.workspace` | `AI Context: Generate from Entire Workspace` | 生成整个工作区的上下文 |
-| `aiContext.generate.folder` | `AI Context: Generate from Current Folder` | 生成当前活动文件夹的上下文 |
-| `aiContext.generate.selected` | `AI Context: Generate from Selected Files` | 生成选中文件的上下文 |
-| `aiContext.generate.configure` | `AI Context: Configure Settings` | 打开插件配置界面 |
+| `aiContext.generate` | `Generate AI Context` | 生成上下文（显示输出选择器） |
+| `aiContext.generate.clipboard` | `Generate AI Context to Clipboard` | 直接复制到剪贴板 |
+| `aiContext.generate.file` | `Generate AI Context to File` | 直接保存到文件 |
+| `aiContext.generate.preview` | `Generate AI Context to Preview` | 直接在新标签页预览 |
+| `aiContext.configure` | `Configure AI Context Generator` | 打开配置界面 |
+| `aiContext.openLogs` | `Open AI Context Generator Logs` | 查看调试日志 |
 
-#### 3.1.3 侧边栏面板（Sidebar View）
-
-在 VSCode 活动栏中添加专属侧边栏入口，面板名称为 **"AI Context"**。面板内包含完整的操作界面（详见 3.9 节）。
-
-#### 3.1.4 快捷键
-
-提供默认快捷键绑定（可在 VSCode 键盘快捷方式设置中自定义）：
-
-| 快捷键（Windows/Linux） | 快捷键（macOS） | 命令 |
-|------------------------|----------------|------|
-| `Ctrl+Shift+Alt+C` | `Cmd+Shift+Alt+C` | 从整个工作区生成 |
-| `Ctrl+Shift+Alt+F` | `Cmd+Shift+Alt+F` | 从当前文件夹生成 |
-| `Ctrl+Shift+Alt+S` | `Cmd+Shift+Alt+S` | 从选中文件生成 |
-
-> 快捷键设计原则：采用 `Ctrl+Shift+Alt` 三键组合，避免与常用快捷键冲突。
+> **v1.2 更新**：原命令 `aiContext.generate` 保留用于命令面板，三个新命令仅在命令面板可见（不在右键菜单显示）。
 
 ---
 
@@ -193,11 +184,23 @@ go.sum
 ```
 # 版本控制
 .git/
-.gitignore
 
 # 依赖目录
 node_modules/
-vendor/
+
+# 构建产物
+build/
+
+# 测试覆盖率
+coverage/
+
+# 锁文件
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+```
+
+> **v1.2 更新**：简化默认忽略规则，移除 `dist/**`、`*.min.js`、`*.min.css` 等模式，用户可根据需要自行配置。
 .pyenv/
 .venv/
 venv/
@@ -1271,12 +1274,13 @@ $FILE_CONTENTS
 | `aiContext.defaultTemplate` | `string` | `"default"` | 默认使用的模板名称 |
 | `aiContext.sensitiveKeyPatterns` | `string[]` | 见下方说明 | 敏感信息 key 匹配模式（自动脱敏） |
 | `aiContext.autoDetectLanguage` | `boolean` | `true` | 是否自动检测代码语言标识（关闭后使用纯扩展名映射） |
-| `aiContext.ignorePatterns` | `string[]` | `[]` | 额外的忽略模式（补充 .aicontextignore，遵循 .gitignore 语法） |
+| `aiContext.ignorePatterns` | `string[]` | 见下方说明 | 额外的忽略模式（补充 .aicontextignore，遵循 .gitignore 语法） |
 | `aiContext.binaryFilePatterns` | `string[]` | 见 3.5.3 | 二进制文件匹配模式（glob 格式） |
-| `aiContext.defaultOutputTarget` | `string` | `"clipboard"` | 默认输出目标：`clipboard` / `file` / `preview` |
-| `aiContext.outputFileName` | `string` | `"ai-context.md"` | 保存文件时的默认文件名 |
+| `aiContext.outputFileName` | `string` | `"ai-context.md"` | 保存文件时的默认文件名（保存到工作区根目录） |
 | `aiContext.showTreeEmoji` | `boolean` | `true` | 目录树中是否显示 emoji 高亮标记 |
 | `aiContext.tokenEstimation` | `string` | `"tiktoken"` | Token 估算方式：`tiktoken`（精确）/ `simple`（字符/3.5） |
+
+> **v1.2 更新**：删除 `defaultOutputTarget` 配置，改为右键菜单直接选择输出目标。
 
 ### 4.2 settings.json 示例
 
@@ -1293,7 +1297,6 @@ $FILE_CONTENTS
     "*.generated.go",
     "internal/testdata/"
   ],
-  "aiContext.defaultOutputTarget": "clipboard",
   "aiContext.outputFileName": "ai-context.md",
   "aiContext.showTreeEmoji": true,
   "aiContext.tokenEstimation": "tiktoken"
@@ -1363,12 +1366,6 @@ $FILE_CONTENTS
           "items": { "type": "string" },
           "default": ["*.png","*.jpg","*.jpeg","*.gif","*.bmp","*.ico","*.webp","*.mp3","*.mp4","*.avi","*.mov","*.wav","*.flac","*.zip","*.tar","*.gz","*.rar","*.7z","*.pdf","*.doc","*.docx","*.exe","*.dll","*.so","*.dylib","*.bin","*.woff","*.woff2","*.ttf","*.eot","*.sqlite","*.db"],
           "description": "Glob patterns for binary files to skip content reading."
-        },
-        "aiContext.defaultOutputTarget": {
-          "type": "string",
-          "default": "clipboard",
-          "enum": ["clipboard", "file", "preview"],
-          "description": "Default output target when triggered via keyboard shortcut or context menu."
         },
         "aiContext.outputFileName": {
           "type": "string",
@@ -1935,6 +1932,11 @@ func main() {
 - ✅ 代码简化遵循 DRY/KISS/YAGNI 原则
 - ✅ 创建发布配置文件（.vscodeignore、launch.json、tasks.json）
 - ✅ 更新 CHANGELOG.md v1.0.0
+- ✅ **大文件 Outline 提取修复**：
+  - 修复大文件（>50KB）优先使用 AST 提取器而非正则分析器
+  - 修复 `$OUTLINE_COUNT` 统计准确性（仅统计实际生成 outline 的文件）
+  - 移除重复的文件头部信息（遵循 DRY 原则）
+  - 所有 143 个单元测试通过
 
 ### 7.5 实现完成度统计
 
@@ -2042,13 +2044,14 @@ func main() {
 | `aiContext.defaultTemplate` | "default" | ✅ |
 | `aiContext.sensitiveKeyPatterns` | [password, secret, ...] | ✅ |
 | `aiContext.autoDetectLanguage` | true | ✅ |
-| `aiContext.ignorePatterns` | [node_modules/**, ...] | ✅ |
+| `aiContext.ignorePatterns` | [node_modules/**, build/**, ...] | ✅ |
 | `aiContext.binaryFilePatterns` | [*.png, *.jpg, ...] | ✅ |
-| `aiContext.defaultOutputTarget` | "clipboard" | ✅ |
 | `aiContext.outputFileName` | "ai-context.md" | ✅ |
 | `aiContext.showTreeEmoji` | true | ✅ |
 | `aiContext.tokenEstimation` | "tiktoken" | ✅ |
 | `aiContext.parallelFileReads` | 50 | ✅ |
+
+> **v1.2 更新**：删除 `defaultOutputTarget` 配置。
 
 ### 9.4 未实现/待优化功能
 

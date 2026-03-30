@@ -6,6 +6,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { IgnoreFilter } from './ignoreFilter';
+import { Logger } from './logger';
 import { Scope } from '../config/constants';
 
 export interface ScanOptions {
@@ -83,7 +84,7 @@ export class FileScanner {
         }
       }
     } catch (error: unknown) {
-      console.warn(`Skipping ${dirPath}:`, error instanceof Error ? error.message : error);
+      Logger.warn(`Skipping ${dirPath}:`, error instanceof Error ? error.message : error);
       skipped++;
     }
 

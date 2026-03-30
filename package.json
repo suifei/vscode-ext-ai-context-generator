@@ -2,7 +2,7 @@
   "name": "ai-context-generator",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "publisher": "suifei",
   "engines": {
     "vscode": "^1.80.0"
@@ -26,18 +26,23 @@
   "contributes": {
     "commands": [
       {
-        "command": "aiContext.generateWorkspace",
-        "title": "%command.generateWorkspace.title%",
+        "command": "aiContext.generate.clipboard",
+        "title": "%command.generate.clipboard.title%",
         "category": "%command.category%"
       },
       {
-        "command": "aiContext.generateFolder",
-        "title": "%command.generateFolder.title%",
+        "command": "aiContext.generate.file",
+        "title": "%command.generate.file.title%",
         "category": "%command.category%"
       },
       {
-        "command": "aiContext.generateSelected",
-        "title": "%command.generateSelected.title%",
+        "command": "aiContext.generate.preview",
+        "title": "%command.generate.preview.title%",
+        "category": "%command.category%"
+      },
+      {
+        "command": "aiContext.generate",
+        "title": "%command.generate.title%",
         "category": "%command.category%"
       },
       {
@@ -46,67 +51,65 @@
         "category": "%command.category%"
       },
       {
-        "command": "aiContext.openSidebar",
-        "title": "%command.openSidebar.title%",
-        "category": "%command.category%",
-        "icon": "$(sidebar-right)"
-      },
-      {
         "command": "aiContext.openLogs",
         "title": "%command.openLogs.title%",
         "category": "%command.category%"
       }
     ],
-    "keybindings": [
-      {
-        "command": "aiContext.generateWorkspace",
-        "key": "ctrl+shift+alt+c",
-        "mac": "cmd+shift+alt+c"
-      },
-      {
-        "command": "aiContext.generateFolder",
-        "key": "ctrl+shift+alt+f",
-        "mac": "cmd+shift+alt+f"
-      },
-      {
-        "command": "aiContext.generateSelected",
-        "key": "ctrl+shift+alt+s",
-        "mac": "cmd+shift+alt+s"
-      }
-    ],
     "menus": {
       "explorer/context": [
         {
-          "command": "aiContext.generateSelected",
-          "group": "workspace",
-          "when": "explorerResourceIsFolder || listMultiSelection"
+          "command": "aiContext.generate.clipboard",
+          "group": "1_generate@1"
+        },
+        {
+          "command": "aiContext.generate.file",
+          "group": "1_generate@2"
+        },
+        {
+          "command": "aiContext.generate.preview",
+          "group": "1_generate@3"
+        },
+        {
+          "submenu": "aiContext.submenu.config",
+          "group": "2_config@1"
+        }
+      ],
+      "aiContext.submenu.config": [
+        {
+          "command": "aiContext.openLogs",
+          "group": "1_tools@1"
+        },
+        {
+          "command": "aiContext.configure",
+          "group": "2_settings@1"
         }
       ],
       "commandPalette": [
         {
-          "command": "aiContext.generateSelected",
-          "when": "filesExplorerFocus"
-        }
-      ]
-    },
-    "viewsContainers": {
-      "activitybar": [
+          "command": "aiContext.generate",
+          "when": "true"
+        },
         {
-          "id": "aiContextSidebar",
-          "title": "%viewsContainers.title%",
-          "icon": "$(files)"
-        }
-      ]
-    },
-    "views": {
-      "aiContextSidebar": [
+          "command": "aiContext.generate.clipboard",
+          "when": "false"
+        },
         {
-          "id": "aiContextSidebarView",
-          "name": "%view.name%",
-          "type": "webview"
+          "command": "aiContext.generate.file",
+          "when": "false"
+        },
+        {
+          "command": "aiContext.generate.preview",
+          "when": "false"
         }
       ]
     },
+    "submenus": [
+      {
+        "id": "aiContext.submenu.config",
+        "label": "%submenu.config.label%"
+      }
+    ],
     "configuration": {
       "title": "%configuration.title%",
       "properties": {
@@ -142,7 +145,16 @@
         },
         "aiContext.sensitiveKeyPatterns": {
           "type": "array",
-          "default": ["password", "passwd", "secret", "token", "api_key", "apikey", "private_key", "credential"],
+          "default": [
+            "password",
+            "passwd",
+            "secret",
+            "token",
+            "api_key",
+            "apikey",
+            "private_key",
+            "credential"
+          ],
           "description": "%configuration.sensitiveKeyPatterns.description%"
         },
         "aiContext.autoDetectLanguage": {
@@ -152,20 +164,48 @@
         },
         "aiContext.ignorePatterns": {
           "type": "array",
-          "default": ["node_modules/**", "dist/**", "build/**", ".git/**", "coverage/**", "*.min.js", "*.min.css", "package-lock.json", "yarn.lock", "pnpm-lock.yaml"],
+          "default": [
+            "node_modules/**",
+            "build/**",
+            ".git/**",
+            "coverage/**",
+            "package-lock.json",
+            "yarn.lock",
+            "pnpm-lock.yaml"
+          ],
           "description": "%configuration.ignorePatterns.description%"
         },
         "aiContext.binaryFilePatterns": {
           "type": "array",
-          "default": ["*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp", "*.ico", "*.bmp", "*.svg", "*.mp3", "*.mp4", "*.wav", "*.avi", "*.mov", "*.zip", "*.tar", "*.gz", "*.exe", "*.dll", "*.so", "*.dylib", "*.woff", "*.woff2", "*.ttf", "*.eot", "*.bin", "*.dat"],
+          "default": [
+            "*.png",
+            "*.jpg",
+            "*.jpeg",
+            "*.gif",
+            "*.webp",
+            "*.ico",
+            "*.bmp",
+            "*.svg",
+            "*.mp3",
+            "*.mp4",
+            "*.wav",
+            "*.avi",
+            "*.mov",
+            "*.zip",
+            "*.tar",
+            "*.gz",
+            "*.exe",
+            "*.dll",
+            "*.so",
+            "*.dylib",
+            "*.woff",
+            "*.woff2",
+            "*.ttf",
+            "*.eot",
+            "*.bin",
+            "*.dat"
+          ],
           "description": "%configuration.binaryFilePatterns.description%"
-        },
-        "aiContext.defaultOutputTarget": {
-          "type": "string",
-          "enum": ["clipboard", "file", "preview"],
-          "default": "clipboard",
-          "enumDescriptions": ["%enum.clipboard%", "%enum.file%", "%enum.preview%"],
-          "description": "%configuration.defaultOutputTarget.description%"
         },
         "aiContext.outputFileName": {
           "type": "string",
@@ -179,9 +219,15 @@
         },
         "aiContext.tokenEstimation": {
           "type": "string",
-          "enum": ["tiktoken", "simple"],
+          "enum": [
+            "tiktoken",
+            "simple"
+          ],
           "default": "tiktoken",
-          "enumDescriptions": ["%enum.tiktoken%", "%enum.simple%"],
+          "enumDescriptions": [
+            "%enum.tiktoken%",
+            "%enum.simple%"
+          ],
           "description": "%configuration.tokenEstimation.description%"
         },
         "aiContext.parallelFileReads": {
@@ -191,10 +237,52 @@
         },
         "aiContext.logLevel": {
           "type": "string",
-          "enum": ["debug", "info", "warn", "error"],
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
           "default": "info",
-          "enumDescriptions": ["%enum.debug%", "%enum.info%", "%enum.warn%", "%enum.error%"],
+          "enumDescriptions": [
+            "%enum.debug%",
+            "%enum.info%",
+            "%enum.warn%",
+            "%enum.error%"
+          ],
           "description": "%configuration.logLevel.description%"
+        },
+        "aiContext.outlineDetail": {
+          "type": "string",
+          "enum": [
+            "basic",
+            "standard",
+            "detailed"
+          ],
+          "default": "standard",
+          "enumDescriptions": [
+            "%enum.outline.basic%",
+            "%enum.outline.standard%",
+            "%enum.outline.detailed%"
+          ],
+          "description": "%configuration.outlineDetail.description%"
+        },
+        "aiContext.outlineIncludePrivate": {
+          "type": "boolean",
+          "default": false,
+          "description": "%configuration.outlineIncludePrivate.description%"
+        },
+        "aiContext.outlineExtractComments": {
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.outlineExtractComments.description%"
+        },
+        "aiContext.outlineMaxItems": {
+          "type": "number",
+          "default": 50,
+          "minimum": 10,
+          "maximum": 200,
+          "description": "%configuration.outlineMaxItems.description%"
         }
       }
     }
@@ -202,13 +290,14 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "webpack --mode production",
+    "compile:tests": "tsc -p tsconfig.json && tsc -p tsconfig.test.json",
     "watch": "webpack --mode development --watch",
     "lint": "eslint src --ext ts",
-    "test": "npm run compile && npm run test:unit",
+    "test": "npm run compile && npm run compile:tests && npm run test:unit",
     "test:unit": "mocha out/test/unit/**/*.test.js",
     "test:coverage": "nyc mocha out/test/unit/**/*.test.js",
-    "package": "vsce package",
-    "publish": "vsce publish"
+    "package": "npm run compile && vsce package",
+    "publish": "npm run package && vsce publish"
   },
   "devDependencies": {
     "@types/chai": "^4.3.11",
@@ -230,7 +319,8 @@
   },
   "dependencies": {
     "ignore": "^5.3.1",
-    "js-tiktoken": "^1.0.12"
+    "js-tiktoken": "^1.0.12",
+    "web-tree-sitter": "^0.26.7"
   },
   "repository": {
     "type": "git",

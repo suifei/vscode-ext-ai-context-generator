@@ -2,6 +2,8 @@
  * Default configuration constants for AI Context Generator
  */
 
+export type OutlineDetail = 'basic' | 'standard' | 'detailed';
+
 export interface AIContextConfig {
   maxFileSize: number;
   maxTokens: number;
@@ -13,11 +15,15 @@ export interface AIContextConfig {
   autoDetectLanguage: boolean;
   ignorePatterns: string[];
   binaryFilePatterns: string[];
-  defaultOutputTarget: 'clipboard' | 'file' | 'preview';
   outputFileName: string;
   showTreeEmoji: boolean;
   tokenEstimation: 'tiktoken' | 'simple';
   parallelFileReads: number;
+  // Outline extraction settings
+  outlineDetail: OutlineDetail;
+  outlineIncludePrivate: boolean;
+  outlineExtractComments: boolean;
+  outlineMaxItems: number;
 }
 
 export const DEFAULT_CONFIG: AIContextConfig = {
@@ -29,13 +35,17 @@ export const DEFAULT_CONFIG: AIContextConfig = {
   defaultTemplate: 'default',
   sensitiveKeyPatterns: ['password', 'passwd', 'secret', 'token', 'api_key', 'apikey', 'private_key', 'credential'],
   autoDetectLanguage: true,
-  ignorePatterns: ['node_modules/**', 'dist/**', 'build/**', '.git/**', 'coverage/**', '*.min.js', '*.min.css', 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml'],
+  ignorePatterns: ['node_modules/**', 'build/**', '.git/**', 'coverage/**', 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml'],
   binaryFilePatterns: ['*.png', '*.jpg', '*.jpeg', '*.gif', '*.webp', '*.ico', '*.bmp', '*.svg', '*.mp3', '*.mp4', '*.wav', '*.avi', '*.mov', '*.zip', '*.tar', '*.gz', '*.exe', '*.dll', '*.so', '*.dylib', '*.woff', '*.woff2', '*.ttf', '*.eot', '*.bin', '*.dat'],
-  defaultOutputTarget: 'clipboard',
   outputFileName: 'ai-context.md',
   showTreeEmoji: true,
   tokenEstimation: 'tiktoken',
   parallelFileReads: 50,
+  // Outline extraction defaults
+  outlineDetail: 'standard',
+  outlineIncludePrivate: false,
+  outlineExtractComments: true,
+  outlineMaxItems: 50,
 };
 
 export const IGNORE_FILE_NAME = '.aicontextignore';

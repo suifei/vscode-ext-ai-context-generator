@@ -4,10 +4,9 @@
  */
 
 import * as vscode from 'vscode';
-import { SidebarProvider } from './ui/sidebarProvider';
 import { OutlineExtractorRegistry } from './outline/registry';
 import { Logger, LogLevel } from './core/logger';
-import { generateWorkspace, generateFolder, generateSelected } from './commands/workspaceCommand';
+import { generate, generateToClipboard, generateToFile, generateToPreview } from './commands/generateCommand';
 import { configureSettings } from './commands/configureCommand';
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -30,42 +29,31 @@ export function activate(context: vscode.ExtensionContext): void {
   Logger.debug('Extension path:', context.extensionUri.fsPath);
   Logger.debug('Log level:', logLevelConfig);
 
-  // Initialize outline extractor registry
-  OutlineExtractorRegistry.initialize();
-
-  // Register sidebar provider
-  const sidebarProvider = new SidebarProvider(context.extensionUri);
-
-  // Register webview view
-  const sidebarViewRegistration = vscode.window.registerWebviewViewProvider(
-    'aiContextSidebarView',
-    sidebarProvider
-  );
-
   // Register commands
-  const workspaceCommand = vscode.commands.registerCommand(
-    'aiContext.generateWorkspace',
-    () => generateWorkspace(context)
+  const generateClipboardCmd = vscode.commands.registerCommand(
+    'aiContext.generate.clipboard',
+    (uri: vscode.Uri | vscode.Uri[] | undefined) => generateToClipboard(context, uri)
   );
 
-  const folderCommand = vscode.commands.registerCommand(
-    'aiContext.generateFolder',
-    () => generateFolder(context)
+  const generateFileCmd = vscode.commands.registerCommand(
+    'aiContext.generate.file',
+    (uri: vscode.Uri | vscode.Uri[] | undefined) => generateToFile(context, uri)
   );
 
-  const selectedCommand = vscode.commands.registerCommand(
-    'aiContext.generateSelected',
-    () => generateSelected(context)
+  const generatePreviewCmd = vscode.commands.registerCommand(
+    'aiContext.generate.preview',
+    (uri: vscode.Uri | vscode.Uri[] | undefined) => generateToPreview(context, uri)
+  );
+
+  // Keep original command for command palette
+  const generateCmd = vscode.commands.registerCommand(
+    'aiContext.generate',
+    (uri: vscode.Uri | vscode.Uri[] | undefined) => generate(context, uri)
   );
 
   const configureCommand = vscode.commands.registerCommand(
     'aiContext.configure',
     () => configureSettings()
-  );
-
-  const openSidebarCommand = vscode.commands.registerCommand(
-    'aiContext.openSidebar',
-    () => vscode.commands.executeCommand('aiContextSidebarView.focus')
   );
 
   const openLogsCommand = vscode.commands.registerCommand(
@@ -75,12 +63,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Register all disposables
   context.subscriptions.push(
-    sidebarViewRegistration,
-    workspaceCommand,
-    folderCommand,
-    selectedCommand,
+    generateClipboardCmd,
+    generateFileCmd,
+    generatePreviewCmd,
+    generateCmd,
     configureCommand,
-    openSidebarCommand,
     openLogsCommand
   );
 

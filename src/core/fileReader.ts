@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { getLanguageFromPath } from '../utils/languageMapper';
 import { formatFileSize, getRelativePath } from '../utils/fileUtils';
+import { Logger } from './logger';
 import { AIContextConfig, BINARY_EMOJI, WARNING_EMOJI } from '../config/constants';
 
 export interface FileReadResult {
@@ -91,7 +92,7 @@ export class FileReader {
       return this.readFile(filePath);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      console.warn(`Error reading file ${filePath}: ${message}`);
+      Logger.warn(`Error reading file ${filePath}: ${message}`);
       return {
         path: filePath,
         content: `// Error reading file: ${message}`,
