@@ -1,4 +1,4 @@
-# AI Context Generator - VSCode Marketplace Description
+# AI Context Generator (Advanced) - VSCode Marketplace Description
 
 ## Extension Description (English)
 

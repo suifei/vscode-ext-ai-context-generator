@@ -1,6 +1,6 @@
 <div align="center">
   <img src="assets/logo.png" width="128" height="128" alt="AI Context Generator Logo">
-  <h1>AI Context Generator</h1>
+  <h1>AI Context Generator (Advanced)</h1>
 </div>
 
 [English](#english) | [简体中文](#简体中文)
@@ -28,7 +28,7 @@ A VSCode extension that generates structured Markdown context from project files
 ### Installation
 
 ```
-Press Ctrl+Shift+X → Search "AI Context Generator" → Install
+Press Ctrl+Shift+X → Search "AI Context Generator (Advanced)" → Install
 ```
 
 ### Quick Start
@@ -94,7 +94,7 @@ VSCode 扩展，将项目代码转换为结构化 Markdown 上下文，用于 AI
 ### 安装
 
 ```
-按 Ctrl+Shift+X → 搜索 "AI Context Generator" → 安装
+按 Ctrl+Shift+X → 搜索 "AI Context Generator (Advanced)" → 安装
 ```
 
 ### 快速开始
@@ -145,5 +145,5 @@ MIT
 
 ## Links
 
-- [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=suifei.ai-context-generator)
+- [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=suifei.ai-context-generator-advanced)
 - [GitHub](https://github.com/suifei/vscode-ext-ai-context-generator)
