@@ -5,25 +5,37 @@ All notable changes for the "AI Context Generator" extension will be documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.0] - 2026-03-31
 
 ### Added
-- **代码库治理 v1.3**: 完成架构文档重组与技术债清理
-  - 提取 `errorUtils.ts` 统一错误处理
-  - 提取 `gitUtils.ts` 消除 `.gitignore` 读取重复
-  - 提取 `normalizePathSeparators()` 路径规范化工具
-  - 新增 14 个单元测试（总计 219 tests passing）
+- **大文件降级开关**: 新增 `enableLargeFileDegradation` 配置和切换命令
+  - 开启时：文件 > 50KB 自动使用大纲/摘要模式
+  - 关闭时：所有文件全文读取
+  - 右键菜单 → "启用超大内容降级/压缩提取" 切换
+- **.gitignore 自动读取**: 自动合并项目 `.gitignore` 到忽略模式
+- **代码质量工具**:
+  - `errorUtils.ts`: 统一错误处理（消除 5 处重复）
+  - `gitUtils.ts`: .gitignore 读取工具（消除 2 处重复）
+  - `normalizePathSeparators()`: 路径规范化工具
+- **测试覆盖**: 新增 14 个单元测试（总计 219 tests passing）
 
 ### Changed
-- **简化 generateContext 函数**: 将进度回调提取为 `executeGeneration()`
-- **内联 filesToList 函数**: 消除单次使用函数
+- **代码重构**: 应用 DRY/KISS/YAGNI 原则
+  - 提取 `executeGeneration()` 简化 `generateContext()`
+  - 内联 `filesToList()` 消除单次使用函数
+  - 重构 `IgnoreFilter.loadPatterns()` 自动读取 .gitignore
+- **配置项说明**: 添加 `.gitignore` 自动合并和模板位置说明
 
 ### Documentation
-- **ARCHITECTURE.md**: 重组架构文档，更新数据流图与模块职责
-- **PRD.md**: 新建产品需求文档，对齐实际业务规则
-- **TECH-DEBT.md**: 更新技术债清单，移除已清理项
-- **ADR-GUIDE.md**: 精简架构决策文档
-- **README.md**: 剔除冗余内容，保留核心信息
+- **架构文档重组**: 6 个核心文档完成治理
+  - `ARCHITECTURE.md`: 更新数据流图与模块职责
+  - `PRD.md`: 重写产品需求，与 package.json 完全对齐
+  - `TECH-DEBT.md`: 移除已清理项，添加无债务评估
+  - `ADR-GUIDE.md**: 补充 3 个架构决策 + 已知限制
+  - `README.md`: 精简 40%，保留核心功能说明
+
+### Refactor
+- 净删除 1837 行冗余代码和文档
 
 ---
 

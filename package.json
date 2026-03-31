@@ -2,7 +2,7 @@
   "name": "ai-context-generator",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "publisher": "suifei",
   "engines": {
     "vscode": "^1.80.0"
