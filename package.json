@@ -1,14 +1,16 @@
 {
-  "name": "ai-context-generator",
-  "displayName": "%displayName%",
+  "name": "ai-context-generator-advanced",
+  "displayName": "AI Context Generator (Advanced)",
   "description": "%description%",
   "version": "1.3.0",
   "publisher": "suifei",
+  "icon": "assets/logo.png",
+  "licenses": ["MIT"],
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": [
-    "Other"
+    "AI"
   ],
   "keywords": [
     "ai",
