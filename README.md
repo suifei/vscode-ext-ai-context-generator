@@ -1,4 +1,7 @@
-# AI Context Generator
+<div align="center">
+  <img src="assets/logo.png" width="128" height="128" alt="AI Context Generator Logo">
+  <h1>AI Context Generator</h1>
+</div>
 
 [English](#english) | [简体中文](#简体中文)
 
@@ -143,4 +146,4 @@ MIT
 ## Links
 
 - [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=suifei.ai-context-generator)
-- [GitHub](https://github.com/suifei/ai-context-generator)
+- [GitHub](https://github.com/suifei/vscode-ext-ai-context-generator)

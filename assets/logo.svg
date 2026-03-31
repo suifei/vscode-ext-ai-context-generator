@@ -1,0 +1,58 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradient for base shape -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E1E3F" />
+      <stop offset="100%" stop-color="#2D2B55" />
+    </linearGradient>
+
+    <!-- Document Gradient -->
+    <linearGradient id="doc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#007ACC" />
+      <stop offset="100%" stop-color="#4EACFF" />
+    </linearGradient>
+
+    <!-- Document Shadow -->
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="2" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+
+    <!-- Sparkle Gradient -->
+    <linearGradient id="sparkle" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF2A8" />
+      <stop offset="100%" stop-color="#FFB300" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background App Icon Shape (Squircle) -->
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#bg)" filter="url(#shadow)" />
+
+  <!-- Main Document Shape -->
+  <path d="M40 24 C34.5 24 30 28.5 30 34 L30 94 C30 99.5 34.5 104 40 104 L88 104 C93.5 104 98 99.5 98 94 L98 48 L74 24 Z" fill="url(#doc)" filter="url(#shadow)" />
+  
+  <!-- Folded Corner -->
+  <path d="M74 24 L74 44 C74 46.2 75.8 48 78 48 L98 48 Z" fill="#9CDCFE" opacity="0.9" />
+
+  <!-- Code Symbol `</>` -->
+  <g stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- < -->
+    <path d="M52 52 L42 62 L52 72" />
+    <!-- > -->
+    <path d="M76 52 L86 62 L76 72" />
+    <!-- / -->
+    <path d="M68 48 L60 76" />
+  </g>
+
+  <!-- Context Lines indicating Markdown / Outline Generation -->
+  <g stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" opacity="0.9">
+    <line x1="42" y1="84" x2="86" y2="84" />
+    <line x1="42" y1="94" x2="66" y2="94" />
+  </g>
+
+  <!-- AI Sparkles / Stars -->
+  <!-- Top Right Sparkle -->
+  <path d="M96 16 C96 22 102 24 108 24 C102 24 96 26 96 32 C96 26 90 24 84 24 C90 24 96 22 96 16 Z" fill="url(#sparkle)" filter="url(#shadow)" />
+  
+  <!-- Bottom Left Sparkle -->
+  <path d="M26 18 C26 22 30 23 34 23 C30 23 26 24 26 28 C26 24 22 23 18 23 C22 23 26 22 26 18 Z" fill="url(#sparkle)" transform="translate(-10, 68)" filter="url(#shadow)" />
+</svg>

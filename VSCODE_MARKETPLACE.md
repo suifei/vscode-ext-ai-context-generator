@@ -114,8 +114,8 @@ export const formatDate = (date: Date): string => { ... }
 
 ## Links
 
-- **GitHub**: https://github.com/suifei/ai-context-generator
-- **Issues**: https://github.com/suifei/ai-context-generator/issues
+- **GitHub**: https://github.com/suifei/vscode-ext-ai-context-generator
+- **Issues**: https://github.com/suifei/vscode-ext-ai-context-generator/issues
 - **License**: MIT
 
 ---
@@ -186,5 +186,5 @@ build/**
 
 ## 链接
 
-- **GitHub**: https://github.com/suifei/ai-context-generator
-- **问题反馈**: https://github.com/suifei/ai-context-generator/issues
+- **GitHub**: https://github.com/suifei/vscode-ext-ai-context-generator
+- **问题反馈**: https://github.com/suifei/vscode-ext-ai-context-generator/issues
