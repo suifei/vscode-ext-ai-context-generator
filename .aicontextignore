@@ -2,14 +2,67 @@
 # Syntax follows .gitignore rules
 # This file works together with the global aiContext.ignorePatterns setting
 #
+# The following patterns were automatically imported from .gitignore:
+#
 # You can add project-specific patterns below.
 # Lines starting with # are comments.
 #
 
+!.vscode/launch.json
+!.vscode/tasks.json
+!important.config.js
+*.bak
+*.class
+*.dll
+*.env
+*.env.*.local
+*.env.development
+*.env.local
+*.env.production
+*.env.test
+*.eslintcache
+*.exe
+*.gz
+*.log
+*.map
+*.min.css
+*.min.js
+*.o
+*.so
+*.swo
+*.swp
+*.tar
+*.tmp
+*.tsbuildinfo
+*.vsix
+*.zip
+.DS_Store
+.claude/
+.git/
 .git/**
+.gitignore
+.idea/
+.nyc_output/
+.pyenv/
+.venv/
+.vscode/settings.json
+AGENTS.md
+CLAUDE.md
+Thumbs.db
+__pycache__/
+bin/
+build/
 build/**
+coverage/
 coverage/**
+dist/
+node_modules/
 node_modules/**
+obj/
+out/
 package-lock.json
 pnpm-lock.yaml
+target/
+vendor/
+venv/
 yarn.lock
