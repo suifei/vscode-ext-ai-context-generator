@@ -2,7 +2,7 @@
   "name": "ai-context-generator-advanced",
   "displayName": "AI Context Generator (Advanced)",
   "description": "%description%",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "publisher": "suifei",
   "icon": "assets/logo.png",
   "licenses": [
