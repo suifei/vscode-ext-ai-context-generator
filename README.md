@@ -73,6 +73,102 @@ dist/**
 
 ---
 
+## Technical Highlights
+
+### 🧠 Intelligent Layered Processing
+
+The extension uses a **layered processing architecture** that automatically selects the optimal processing strategy based on file type and size:
+
+| File Type | Processing Method | Output |
+|-----------|------------------|--------|
+| Small code files (≤50KB) | Full read | Source code + syntax highlighting |
+| Large code files (>50KB) | AST outline extraction | Type definitions, function signatures, call relations |
+| Log files (.log) | Pattern analysis | Log level distribution, error patterns, time range |
+| Data files (.csv/.tsv) | Structure inference | Field types, sample data, statistics |
+| Config files (JSON/YAML) | Smart summarization | Structure skeleton, sensitive data redaction |
+| Document files (.md/.txt) | Content analysis | Section outline, keyword extraction |
+| Binary files | Metadata extraction | Format info, dimensions/duration, etc. |
+
+### 🏗️ AST Outline Extraction Algorithm
+
+For large code files, the extension uses **LSP-based AST outline extraction**:
+
+```
+1. Leverage VSCode's DocumentSymbol API to obtain symbol tree
+2. Build hierarchical structure: Class → Method → Property
+3. Extract function signatures and call relationships (→ calls: notation)
+4. Supported languages: TS/JS, Python, Go, Rust, Java, C/C++
+```
+
+**Benefits**:
+- Generates concise structural outlines even for files with tens of thousands of lines
+- Preserves complete type information and function signatures
+- Significantly reduces token consumption (typically 90%+ compression)
+
+### 📊 Smart Summary Engine
+
+For non-code files, the extension has **dedicated analyzers**:
+
+- **Log Analyzer**: Identifies log level distribution (INFO/WARN/ERROR), detects error patterns, extracts key time ranges
+- **Config Analyzer**: Parses JSON/YAML structure, auto-redacts sensitive fields (password/token/secret)
+- **Doc Analyzer**: Extracts Markdown heading hierarchy, keywords, and paragraph summaries
+- **CSV Analyzer**: Infers field types, detects numeric ranges, provides data samples
+
+### ⚡ Performance Optimization Design
+
+- **Parallel File Reading**: Batch concurrent file reading (default 50 concurrent)
+- **LRU Cache**: AST outline extraction results cached (5min TTL, max 100 entries)
+- **Incremental Filtering**: Intelligently merges `.gitignore` and `.aicontextignore` rules
+- **Lazy Evaluation**: LSP services only invoked when needed
+
+### 🔒 Privacy First
+
+- **100% Local Processing**: No network requests, no code uploads
+- **Sensitive Data Protection**: Auto-detects and redacts passwords, tokens in config files
+- **Controlled Output**: Full control over generated content, decide which files to include
+
+### 🔄 Processing Pipeline
+
+```
+┌─────────────────┐
+│  Select Scope    │  Workspace/Folder/Selected Files
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Smart Filter    │  .aicontextignore + .gitignore
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  File Scan       │  Recursive traversal, parallel read (50 concurrent)
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Classification  │
+│  ├─ Code Files   │  → Full content / AST outline
+│  ├─ Config Files │  → Structure summary + redaction
+│  ├─ Logs/Data    │  → Smart analysis
+│  └─ Binary Files │  → Metadata extraction
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Tree Generate   │  ASCII tree with emoji markers
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Token Count     │  Tiktoken accurate counting
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Template Render │  Replace $VARIABLE placeholders
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Output Result   │  Clipboard / File / Preview Tab
+└─────────────────┘
+```
+
+---
+
 ## 简体中文
 
 VSCode 扩展，将项目代码转换为结构化 Markdown 上下文，用于 AI 助手交互。
@@ -136,6 +232,102 @@ dist/**
 | `$FILE_CONTENTS` | 格式化的文件内容 |
 | `$TOKEN_COUNT` | 总 Token 数 |
 | `$FILE_COUNT` | 文件数量 |
+
+---
+
+## 技术亮点
+
+### 🧠 智能分层处理策略
+
+插件采用**分层处理架构**，根据文件类型和大小自动选择最优处理方案：
+
+| 文件类型 | 处理方式 | 输出内容 |
+|---------|---------|----------|
+| 小型代码文件 (≤50KB) | 完整读取 | 源代码 + 语法高亮 |
+| 大型代码文件 (>50KB) | AST 大纲提取 | 类型定义、函数签名、调用关系 |
+| 日志文件 (.log) | 模式分析 | 日志级别分布、错误模式、时间范围 |
+| 数据文件 (.csv/.tsv) | 结构推断 | 字段类型、样本数据、统计信息 |
+| 配置文件 (JSON/YAML) | 智能摘要 | 结构骨架、敏感数据脱敏 |
+| 文档文件 (.md/.txt) | 内容分析 | 章节大纲、关键词提取 |
+| 二进制文件 | 元数据提取 | 格式信息、尺寸/时长等 |
+
+### 🏗️ AST 大纲提取算法
+
+对于大型代码文件，插件使用**基于 LSP 的 AST 大纲提取**技术：
+
+```
+1. 利用 VSCode 的 DocumentSymbol API 获取符号树
+2. 构建层级结构：类 → 方法 → 属性
+3. 提取函数签名和调用关系 (→ calls: 符号)
+4. 支持语言：TS/JS、Python、Go、Rust、Java、C/C++
+```
+
+**优势**：
+- 即使数万行的文件也能生成简洁的结构大纲
+- 保留完整的类型信息和函数签名
+- 显著减少 Token 消耗（通常压缩 90%+）
+
+### 📊 智能摘要引擎
+
+针对非代码文件，插件内置了**专用分析器**：
+
+- **日志分析器**：识别日志级别分布 (INFO/WARN/ERROR)、检测错误模式、提取关键时间范围
+- **配置分析器**：解析 JSON/YAML 结构、自动脱敏敏感字段 (password/token/secret)
+- **文档分析器**：提取 Markdown 标题层级、关键词和段落摘要
+- **CSV 分析器**：推断字段类型、检测数值范围、提供数据样本
+
+### ⚡ 性能优化设计
+
+- **并行文件读取**：批量并发读取文件（默认 50 并发）
+- **LRU 缓存**：AST 大纲提取结果缓存（5分钟 TTL，最多100条）
+- **增量过滤**：智能合并 `.gitignore` 和 `.aicontextignore` 规则
+- **惰性求值**：仅在需要时调用 LSP 服务
+
+### 🔒 隐私优先
+
+- **100% 本地处理**：无需任何网络请求，不上传代码
+- **敏感数据保护**：自动检测并脱敏配置文件中的密码、token 等敏感字段
+- **可控输出**：完全掌控生成内容，决定哪些文件被包含
+
+### 🔄 处理流程
+
+```
+┌─────────────────┐
+│  选择范围        │  工作区/文件夹/选中文件
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  智能过滤        │  .aicontextignore + .gitignore
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  文件扫描        │  递归遍历，并行读取（50并发）
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  分类处理        │
+│  ├─ 代码文件     │  → 完整内容 / AST大纲
+│  ├─ 配置文件     │  → 结构摘要 + 脱敏
+│  ├─ 日志/数据    │  → 智能分析
+│  └─ 二进制文件   │  → 元数据提取
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  目录树生成      │  带 emoji 标记选中文件
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Token 计数     │  Tiktoken 精确计数
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  模板渲染        │  替换 $VARIABLE 变量
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  输出结果        │  剪贴板 / 文件 / 预览窗口
+└─────────────────┘
+```
 
 ---
 
