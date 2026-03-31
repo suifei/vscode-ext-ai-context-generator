@@ -179,6 +179,61 @@ if (binaryPatterns) {
 
 ---
 
+### ADR-11: 配置热更新重建依赖
+
+**决策**: `refreshDependents()` 创建新实例而非修改属性
+
+```typescript
+// contextGenerator.ts
+private refreshDependents(): void {
+  this.fileReader = new FileReader(this.config, this.workspaceRoot);
+  this.smartSummarizer = new SmartSummarizer(this.config, this.workspaceRoot);
+  this.tokenCounter = new TokenCounter(this.config.tokenEstimation);
+}
+```
+
+**理由**: 配置变更影响组件初始化，重建比状态同步更简单
+
+**陷阱**: 旧实例若有异步任务，可能存在竞态（当前无长尾任务，安全）
+
+---
+
+### ADR-12: 错误处理统一提取
+
+**决策**: 使用 `getErrorMessage()` 工具函数
+
+```typescript
+// errorUtils.ts
+export function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+```
+
+**理由**: 消除 `error instanceof Error ? error.message : String(error)` 重复模式
+
+**陷阱**: 直接使用 `String(error)` 会丢失 Error 类型堆栈信息
+
+---
+
+### ADR-13: .gitignore 自动合并
+
+**决策**: 读取并合并项目 `.gitignore` 到忽略模式
+
+```typescript
+// ignoreFilter.ts
+private loadPatterns(additionalPatterns: string[]): void {
+  const gitignorePatterns = readGitignore(this.workspaceRoot);
+  this.ignoreInstance = this.ignoreInstance.add(gitignorePatterns);
+  // ...
+}
+```
+
+**理由**: 避免用户重复配置已忽略的模式
+
+**陷阱**: `.gitignore` 变更需要重启 VSCode 或手动重新加载
+
+---
+
 ## 边界陷阱
 
 | 场景 | 防御 |
@@ -188,6 +243,8 @@ if (binaryPatterns) {
 | 无工作区 | `workspaceFolders?.[0]` 空值检查 |
 | 模板变量缺失 | `value || ''` 空字符串替换 |
 | 目录访问失败 | try-catch 跳过，`skipped++` |
+| 大文件解析失败 | Fallback 到 SmartSummarizer |
+| Tiktoken 加载失败 | 自动降级到 simple 模式 |
 
 ---
 
@@ -224,3 +281,31 @@ if (binaryPatterns) {
 **问题**: `reload()` 修改运行时状态
 
 **现状**: 单线程无竞态，无需锁
+
+---
+
+## 已知限制
+
+### 无取消令牌支持
+
+**现状**: 大项目扫描无法中途取消
+
+**影响**: 10 万文件 Monorepo 扫描期间消耗 CPU/内存
+
+**缓解**: 用户可关闭 VSCode 终止进程
+
+---
+
+### 无 OOM 防御
+
+**现状**: RegexFallback 对 2MB 单行文件可能回溯阻塞
+
+**缓解**: 大文件优先使用 AST，Regex 作为最后降级
+
+---
+
+### 无性能埋点
+
+**现状**: 无法精确定位性能瓶颈
+
+**缓解**: Logger.debug() 输出各步骤耗时
