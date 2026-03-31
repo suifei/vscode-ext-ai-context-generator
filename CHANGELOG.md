@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **代码库治理 v1.3**: 完成架构文档重组与技术债清理
+  - 提取 `errorUtils.ts` 统一错误处理
+  - 提取 `gitUtils.ts` 消除 `.gitignore` 读取重复
+  - 提取 `normalizePathSeparators()` 路径规范化工具
+  - 新增 14 个单元测试（总计 219 tests passing）
+
+### Changed
+- **简化 generateContext 函数**: 将进度回调提取为 `executeGeneration()`
+- **内联 filesToList 函数**: 消除单次使用函数
+
+### Documentation
+- **ARCHITECTURE.md**: 重组架构文档，更新数据流图与模块职责
+- **PRD.md**: 新建产品需求文档，对齐实际业务规则
+- **TECH-DEBT.md**: 更新技术债清单，移除已清理项
+- **ADR-GUIDE.md**: 精简架构决策文档
+- **README.md**: 剔除冗余内容，保留核心信息
+
+---
+
+## [Unreleased] (Previous)
+
+### Added
 - **Enhanced Outline Module**: Complete rewrite of outline extraction system
   - New `ASTExtractor` using hierarchical DocumentSymbol API
   - Improved error handling with graceful fallbacks

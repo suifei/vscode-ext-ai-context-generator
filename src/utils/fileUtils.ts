@@ -37,3 +37,10 @@ export function isCodeFile(filePath: string): boolean {
   ]);
   return codeExtensions.has(ext);
 }
+
+/**
+ * Normalize path separators to forward slashes (for .gitignore compatibility)
+ */
+export function normalizePathSeparators(filePath: string): string {
+  return filePath.split(path.sep).join('/');
+}

@@ -229,7 +229,7 @@ export class ContextGenerator {
     const vars: TemplateVariables = {
       PROJECT_NAME: path.basename(data.treeRoot),
       DIR_TREE: data.dirTree,
-      FILE_LIST: filesToList(data.treeRoot, data.files),
+      FILE_LIST: data.files.map(f => getRelativePath(data.treeRoot, f)).join('\n'),
       FILE_CONTENTS: data.fileContents,
       TOKEN_COUNT: this.tokenCounter.formatTokenCount(data.tokenCount),
       TOKEN_LIMIT: this.tokenCounter.formatTokenCount(this.config.maxTokens),
@@ -337,6 +337,3 @@ export class ContextGenerator {
   }
 }
 
-function filesToList(workspaceRoot: string, files: string[]): string {
-  return files.map(f => getRelativePath(workspaceRoot, f)).join('\n');
-}

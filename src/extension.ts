@@ -9,6 +9,7 @@ import { Logger, LogLevel } from './core/logger';
 import { generate, generateToClipboard, generateToFile, generateToPreview } from './commands/generateCommand';
 import { configureSettings } from './commands/configureCommand';
 import { generateIgnoreFile } from './commands/ignoreFileCommand';
+import { toggleLargeFileDegradation } from './commands/toggleLargeFileDegradationCommand';
 
 export function activate(context: vscode.ExtensionContext): void {
   // Initialize logger
@@ -67,6 +68,11 @@ export function activate(context: vscode.ExtensionContext): void {
     (uri, selectedFiles) => generateIgnoreFile(context)
   );
 
+  const toggleLargeFileDegradationCommand = vscode.commands.registerCommand(
+    'aiContext.toggleLargeFileDegradation',
+    () => toggleLargeFileDegradation()
+  );
+
   // Register all disposables
   context.subscriptions.push(
     generateClipboardCmd,
@@ -75,7 +81,8 @@ export function activate(context: vscode.ExtensionContext): void {
     generateCmd,
     configureCommand,
     openLogsCommand,
-    generateIgnoreFileCommand
+    generateIgnoreFileCommand,
+    toggleLargeFileDegradationCommand
   );
 
   // Show welcome message on first activation

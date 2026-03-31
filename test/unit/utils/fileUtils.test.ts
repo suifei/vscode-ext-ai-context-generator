@@ -4,7 +4,7 @@
 
 import { expect } from 'chai';
 import * as path from 'path';
-import { formatFileSize, getRelativePath, isCodeFile } from '../../../src/utils/fileUtils';
+import { formatFileSize, getRelativePath, isCodeFile, normalizePathSeparators } from '../../../src/utils/fileUtils';
 
 describe('fileUtils', () => {
   describe('formatFileSize', () => {
@@ -257,6 +257,32 @@ describe('fileUtils', () => {
       const formatted = formatFileSize(hugeSize);
       expect(formatted).to.include('MB');
       expect(parseInt(formatted)).to.be.greaterThan(4000);
+    });
+  });
+
+  describe('normalizePathSeparators', () => {
+    it('should convert Windows backslashes to forward slashes', () => {
+      expect(normalizePathSeparators('src\\utils\\fileUtils.ts')).to.equal('src/utils/fileUtils.ts');
+    });
+
+    it('should handle forward slashes unchanged', () => {
+      expect(normalizePathSeparators('src/utils/fileUtils.ts')).to.equal('src/utils/fileUtils.ts');
+    });
+
+    it('should handle empty string', () => {
+      expect(normalizePathSeparators('')).to.equal('');
+    });
+
+    it('should handle single segment', () => {
+      expect(normalizePathSeparators('file.ts')).to.equal('file.ts');
+    });
+
+    it('should handle mixed separators', () => {
+      expect(normalizePathSeparators('src\\utils/file.ts')).to.equal('src/utils/file.ts');
+    });
+
+    it('should handle trailing separator', () => {
+      expect(normalizePathSeparators('src\\utils\\')).to.equal('src/utils/');
     });
   });
 });

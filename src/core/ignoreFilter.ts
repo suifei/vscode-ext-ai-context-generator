@@ -6,6 +6,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import Ignore from 'ignore';
 import { IGNORE_FILE_NAME } from '../config/constants';
+import { readGitignore } from '../utils/gitUtils';
+import { normalizePathSeparators } from '../utils/fileUtils';
 
 export class IgnoreFilter {
   private ignoreInstance: ReturnType<typeof Ignore>;
@@ -23,6 +25,12 @@ export class IgnoreFilter {
     // Create a fresh ignore instance to clear previous patterns
     this.ignoreInstance = Ignore();
 
+    // First, add .gitignore patterns if available
+    const gitignorePatterns = readGitignore(this.workspaceRoot);
+    if (gitignorePatterns.length > 0) {
+      this.ignoreInstance = this.ignoreInstance.add(gitignorePatterns);
+    }
+
     const ignoreFilePath = path.join(this.workspaceRoot, IGNORE_FILE_NAME);
 
     if (fs.existsSync(ignoreFilePath)) {
@@ -30,7 +38,7 @@ export class IgnoreFilter {
         const content = fs.readFileSync(ignoreFilePath, 'utf-8');
         this.ignoreInstance = this.ignoreInstance.add(content);
       } catch {
-        // Keep the fresh instance
+        // Keep the current instance
       }
     }
 
@@ -66,6 +74,6 @@ export class IgnoreFilter {
    */
   private toNormalizedPath(filePath: string): string {
     const relativePath = path.relative(this.workspaceRoot, filePath);
-    return relativePath.split(path.sep).join('/');
+    return normalizePathSeparators(relativePath);
   }
 }

@@ -59,6 +59,11 @@
         "command": "aiContext.generate.ignoreFile",
         "title": "%command.generate.ignoreFile.title%",
         "category": "%command.category%"
+      },
+      {
+        "command": "aiContext.toggleLargeFileDegradation",
+        "title": "%command.toggleLargeFileDegradation.title%",
+        "category": "%command.category%"
       }
     ],
     "menus": {
@@ -90,8 +95,12 @@
           "group": "2_settings@1"
         },
         {
+          "command": "aiContext.toggleLargeFileDegradation",
+          "group": "3_settings@2"
+        },
+        {
           "command": "aiContext.generate.ignoreFile",
-          "group": "3_file@1"
+          "group": "4_file@1"
         }
       ],
       "commandPalette": [
@@ -292,6 +301,11 @@
           "minimum": 10,
           "maximum": 200,
           "description": "%configuration.outlineMaxItems.description%"
+        },
+        "aiContext.enableLargeFileDegradation": {
+          "type": "boolean",
+          "default": true,
+          "description": "%configuration.enableLargeFileDegradation.description%"
         }
       }
     }

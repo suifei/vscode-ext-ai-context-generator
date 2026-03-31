@@ -6,6 +6,7 @@ import * as path from 'path';
 import { FileReadResult } from '../core/fileReader';
 import { AIContextConfig, WARNING_EMOJI, SECTION_SEPARATOR } from '../config/constants';
 import { getRelativePath } from '../utils/fileUtils';
+import { getErrorMessage } from '../utils/errorUtils';
 
 export class ConfigAnalyzer {
   constructor(
@@ -27,7 +28,7 @@ export class ConfigAnalyzer {
         parsed = this.analyzeYamlStructure(fileResult.content);
       }
     } catch (error: unknown) {
-      parseError = error instanceof Error ? error.message : String(error);
+      parseError = getErrorMessage(error);
     }
 
     let output = `// File: ${relativePath} (${WARNING_EMOJI} Config structure)\n\n`;

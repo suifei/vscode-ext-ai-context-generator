@@ -7,6 +7,7 @@ import * as path from 'path';
 import { IgnoreFilter } from './ignoreFilter';
 import { Logger } from './logger';
 import { IGNORE_FILE_NAME } from '../config/constants';
+import { getErrorMessage } from '../utils/errorUtils';
 
 export interface ScanOptions {
   /**
@@ -77,7 +78,7 @@ export class FileScanner {
         }
       }
     } catch (error: unknown) {
-      Logger.warn(`Skipping ${dirPath}:`, error instanceof Error ? error.message : error);
+      Logger.warn(`Skipping ${dirPath}: ${getErrorMessage(error)}`);
       skipped++;
     }
 

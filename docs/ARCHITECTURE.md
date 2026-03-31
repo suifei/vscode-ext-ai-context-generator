@@ -1,179 +1,195 @@
-# AI Context Generator - 架构设计文档
+# AI Context Generator - 架构设计
 
 ## 核心数据流
 
 ```
-用户交互 → 命令层 → 编排层 → 处理层 → 输出层
-   ↓         ↓       ↓       ↓       ↓
-extension  generate  context  scan    template
-   ↓         ↓       ↓       ↓       ↓
-  VSCode   command  file     ignore   variable
-   API      handler  scanner  filter  substitutor
-                     ↓       ↓
-                    reader   tree
-                    ↓       ↓
-                   outline  token
-                   ↓       ↓
-                  summary  counter
+用户触发 → 命令路由 → 上下文生成 → 结果输出
+   ↓          ↓          ↓           ↓
+extension  commands  contextGen  clipboard/file/preview
+   ↓          ↓          ↓           ↓
+VSCode API  normalize  7步流水线    withProgress
+                       ↓
+                  ┌─────┴─────┐
+                  ↓           ↓
+              文件发现      内容处理
+                  ↓           ↓
+              scanner      reader
+                            ↓
+                         ┌───┴───┐
+                         ↓       ↓
+                      二进制    文本
+                         ↓       ↓
+                      metadata  outline/summary
+                                  ↓
+                               template
+                                  ↓
+                               render
 ```
 
-## 模块职责边界
+## 模块职责
 
-### 入口层 (`src/extension.ts`)
-- 唯一 VSCode 扩展入口点
-- 注册命令、初始化 Logger
-- 不处理业务逻辑，仅做委托
+### 入口 (`extension.ts`)
+- 注册 7 个命令到 VSCode
+- 初始化 Logger 单例
+- 显示欢迎消息（首次）
 
-### 命令层 (`src/commands/`)
-- `generateCommand.ts`: URI 规范化、输出目标路由、进度包装
-- `configureCommand.ts`: 设置 UI 简化入口
-- `ignoreFileCommand.ts`: `.aicontextignore` 文件生成器
+### 命令层 (`commands/`)
 
-**关键决策**: 命令层不直接调用底层 API，通过 `ContextGenerator` 编排
+| 文件 | 职责 |
+|------|------|
+| `generateCommand.ts` | URI 规范化、输出路由、进度包装、错误处理 |
+| `ignoreFileCommand.ts` | 生成 `.aicontextignore`（合并 `.gitignore`） |
+| `toggleLargeFileDegradationCommand.ts` | 切换大文件降级开关 |
+| `configureCommand.ts` | 快速配置入口 |
 
-### 核心编排层 (`src/core/contextGenerator.ts`)
+**关键函数**:
+- `normalizeUris()`: 多选参数优先级 `selectedFiles > uri`
+- `executeGeneration()`: 进度回调包装，隔离错误处理
 
-**核心协调器**: 单一职责，协调 7 个步骤:
-1. 文件扫描 → FileScanner
-2. 树根计算 → findCommonParent()
-3. 内容读取 → FileReader
-4. 目录树生成 → DirTreeGenerator
-5. 文件处理 → processFiles() → SmartSummarizer / OutlineExtractorRegistry
-6. Token 计算 → TokenCounter
-7. 模板渲染 → TemplateRenderer
+### 核心编排 (`core/contextGenerator.ts`)
+
+**单次生成流水线**（`generate()` 方法）:
+```
+1. FileScanner.scan()        → 发现文件
+2. findCommonParent()         → 计算树根
+3. FileReader.readFiles()    → 读取内容
+4. DirTreeGenerator.generate() → 生成目录树
+5. processFiles()             → 处理大文件
+6. TokenCounter.count()       → 计算 Token
+7. TemplateRenderer.render()  → 渲染输出
+```
 
 **配置热更新**:
-- `reloadFromSettings()`: 动态从 VSCode 配置读取
-- `updateConfig()`: 程序化配置更新
-- `refreshDependents()`: 重建依赖组件 (FileReader, SmartSummarizer, TokenCounter)
+```
+reloadFromSettings() → updateConfig() → refreshDependents()
+                                          ↓
+                            ┌─────────────┴─────────────┐
+                            ↓                           ↓
+                    new FileReader              new SmartSummarizer
+                    new TokenCounter
+```
 
-### 过滤层 (`src/core/ignoreFilter.ts`)
-
-**双模式过滤**:
-1. 文件级: `isIgnored(filePath)`
-2. 目录级: `isDirectoryIgnored(dirPath)` (额外检查 `/` 后缀)
+### 过滤层 (`core/ignoreFilter.ts`)
 
 **三层模式合并**:
 ```
-.aicontextignore (项目级) > aiContext.ignorePatterns (全局) > binaryFilePatterns (内置)
+.gitignore (自动读取) > .aicontextignore (项目) > aiContext.ignorePatterns (全局) > binaryFilePatterns (内置)
 ```
 
-**reload() 陷阱**: `binaryPatterns` 通过可空参数更新，需使用 `length = 0; push(...)` 避免引用共享
+**路径规范化**: `toNormalizedPath()` → Windows `\` 转 `/`
 
-### 扫描层 (`src/core/fileScanner.ts`)
+### 扫描层 (`core/fileScanner.ts`)
 
-**双路径支持**:
-- 全工作区扫描: `scanDirectoryAsync()` (递归，maxDepth=100)
-- 选中路径扫描: `scanSelectedPaths()` (单层/多层混合)
+**双模式扫描**:
+- 全工作区: `scanDirectoryAsync()` 递归（maxDepth=100）
+- 选中路径: `scanSelectedPaths()` 智能处理文件/文件夹混合
 
-**异常处理策略**:
-- 目录访问失败 → 跳过，skipped++
-- 文件不可读 → 跳过，skipped++
-- 始终返回 ScanResult，不抛出
+**容错策略**: 访问失败 → 跳过 → `skipped++`
 
-### 读取层 (`src/core/fileReader.ts`)
+### 读取层 (`core/fileReader.ts`)
 
-**智能分类器**:
+**文件分类决策树**:
 ```
-fs.statSync() → size > maxFileSize? → isBinaryFile() → 分支:
-  ├─ 二进制 → extractBinaryMetadata() → formatBinaryMetadata()
-  └─ 文本 → readFileContent() → formatFileContent()
-```
-
-**并发控制**: `parallelFileReads` 配置批次大小 (默认 50)
-
-**二进制检测**:
-- 扩展名匹配 (`binaryFilePatterns`)
-- 无扩展名 → 内容检测 (读取前 1KB，检查 null 字节)
-
-### 总结层 (`src/core/smartSummarizer.ts`)
-
-**扩展名路由器**:
-```
-.log → LogAnalyzer      (日志级别分布、错误采样)
-.csv/.tsv → CsvAnalyzer   (模式推断、类型检测)
-.json/.yaml → ConfigAnalyzer (结构骨架、敏感数据脱敏)
-.md/.txt → DocAnalyzer     (标题大纲、关键词提取)
-其他 → GenericAnalyzer  (代码结构、文本预览)
+fs.statSync()
+    ↓
+size > maxFileSize AND enableLargeFileDegradation?
+    ↓ Yes                              ↓ No
+isBinaryFile()?                    isBinaryFile()?
+    ↓ Yes        ↓ No                   ↓ Yes    ↓ No
+metadata    content(full)          metadata  content(full)
 ```
 
-### 大文件处理策略 (`src/core/contextGenerator.ts:142-169`)
+**并发控制**: `parallelFileReads` 批次大小（默认 50）
+
+### 大文件降级策略 (`contextGenerator.ts:processFiles()`)
 
 ```
-文件大小 > 50KB (isTruncated=true)?
-├─ 是 → 语言支持 AST? → OutlineExtractorRegistry.extractOutline()
-│       └─ 否 → SmartSummarizer.summarize()
-└─ 否 → SmartSummarizer.shouldSummarize()? → 是/否
+isTruncated == true?
+    ↓ Yes
+语言支持 AST?
+    ↓ Yes              ↓ No
+outline AST    SmartSummarizer.summarize()
 ```
 
-### Token 计数层 (`src/core/tokenCounter.ts`)
+### 摘要路由 (`core/smartSummarizer.ts`)
 
-**双重模式**:
-- `tiktoken`: 使用 `js-tiktoken` (cl100k_base 编码，全局单例缓存)
-- `simple`: 降级方案 `Math.ceil(length / 3.75)`
+| 扩展名 | Analyzer | 输出 |
+|--------|----------|------|
+| `.log` | LogAnalyzer | 级别分布、错误采样 |
+| `.csv/.tsv` | CsvAnalyzer | 模式推断、类型检测 |
+| `.json/.yaml/.xml` | ConfigAnalyzer | 结构骨架、敏感数据脱敏 |
+| `.md/.txt` | DocAnalyzer | 标题大纲、关键词 |
+| 其他 | GenericAnalyzer | 代码结构、文本预览 |
 
-**全局编码缓存**: `cachedEncoding` (模块级单例，跨实例共享)
+### 提取层 (`outline/`)
 
-### 提取层 (`src/outline/registry.ts`)
-
-**三级提取策略**:
+**三级降级**:
 ```
-ASTExtractor (LSP DocumentSymbol) → Basic OutlineExtractor (LSP SymbolInformation) → RegexFallback
-        ↓ (层次结构)                    ↓ (扁平)                      ↓ (正则)
-    types/functions              types/imports              types/functions/imports
+ASTExtractor (DocumentSymbol, 层次)
+    ↓ 失败
+OutlineExtractor (SymbolInformation, 扁平)
+    ↓ 失败
+RegexFallback (正则模式)
 ```
 
 **缓存机制**:
-- LRU 淘汰策略 (`cacheAccessOrder` 数组)
+- LRU 淘汰（`cacheAccessOrder` 数组）
 - TTL: 5 分钟
 - 容量: 100 条
 - 缓存键: `${uri}:${version}:${optionsStr}`
 
-### 模板层 (`src/core/templateRenderer.ts`)
+### 模板层 (`core/templateRenderer.ts`)
 
-**变量替换**: `$KEY_NAME` → split/join (非正则，避免转义地狱)
+**变量替换**: `split('$KEY').join(value)` 避免正则转义
 
-**自定义模板发现**: `.ai_context_templates/*.md` (自动扫描)
+**自定义模板**: `.ai_context_templates/*.md` 自动发现
 
-### 日志层 (`src/core/logger.ts`)
+### 工具层 (`utils/`)
 
-**单例模式**: 全局 `logger` 实例
-**双输出**: VSCode OutputChannel + Console
-**级别过滤**: DEBUG < INFO < WARN < ERROR
+| 文件 | 职责 |
+|------|------|
+| `fileUtils.ts` | 文件大小格式化、相对路径、路径规范化、代码文件检测 |
+| `errorUtils.ts` | 错误消息提取（统一错误处理） |
+| `gitUtils.ts` | `.gitignore` 读取（与 ignoreFileCommand 共享） |
+| `languageMapper.ts` | 扩展名 → 语言 ID |
+| `languagePatterns.ts` | 代码分析正则模式 |
 
-## 关键依赖关系
+## 关键依赖图
 
-### 隐性依赖
-1. `ContextGenerator` → `IgnoreFilter` → `FileScanner` (构造器注入链)
-2. `FileReader` → `BinaryMetadataExtractor` (组合)
-3. `OutlineExtractorRegistry` → `ASTExtractor` → `OutlineExtractor` (继承链)
-
-### 状态流转
 ```
-用户选择路径 → generateCommand → ContextGenerator.generate()
-                                                    ↓
-                                            FileScanner.scan()
-                                                    ↓
-                                            FileReader.readFiles()
-                                                    ↓
-                                            SmartSummarizer.summarize()
-                                                    ↓
-                                            TemplateRenderer.render()
-                                                    ↓
-                                            outputResult() → VSCode API
+extension.ts
+    ↓
+commands/generateCommand.ts
+    ↓
+core/contextGenerator.ts
+    ├─→ core/fileScanner.ts → core/ignoreFilter.ts
+    ├─→ core/fileReader.ts → core/binaryMetadataExtractor.ts
+    ├─→ core/dirTreeGenerator.ts
+    ├─→ core/tokenCounter.ts
+    ├─→ core/templateRenderer.ts
+    └─→ core/smartSummarizer.ts
+          ├─→ summary/logAnalyzer.ts
+          ├─→ summary/csvAnalyzer.ts
+          ├─→ summary/configAnalyzer.ts
+          ├─→ summary/docAnalyzer.ts
+          └─→ summary/genericAnalyzer.ts
+
+outline/registry.ts
+    ├─→ outline/astExtractor.ts → outline/outlineExtractor.ts
+    └─→ outline/regexFallback.ts → outline/outlineExtractor.ts
 ```
 
 ## 配置传播路径
 
 ```
-VSCode Settings.json → aiContext.* → ContextGenerator.reloadFromSettings()
-                                          ↓
-                                    updateConfig()
-                                          ↓
-                                    refreshDependents()
-                                          ↓
-                    ┌─────────────────┴──────────────────┐
-                    ↓                                    ↓
-            FileReader.reload()              SmartSummarizer (new)
-            TokenCounter (new)
+VSCode Settings.json
+    ↓
+contextGenerator.reloadFromSettings()
+    ↓
+contextGenerator.updateConfig()
+    ↓
+contextGenerator.refreshDependents()
+    ↓
+├─→ new FileReader(config, workspaceRoot)
+└─→ new SmartSummarizer(config, workspaceRoot)
 ```

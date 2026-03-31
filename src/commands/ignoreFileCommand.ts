@@ -4,7 +4,9 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import { DEFAULT_CONFIG, IGNORE_FILE_NAME } from '../config/constants';
+import { readGitignore } from '../utils/gitUtils';
 
 /**
  * Generate .aicontextignore file in workspace root
@@ -47,8 +49,11 @@ export async function generateIgnoreFile(context: vscode.ExtensionContext): Prom
   const config = vscode.workspace.getConfiguration('aiContext');
   const ignorePatterns = config.get<string[]>('ignorePatterns', DEFAULT_CONFIG.ignorePatterns);
 
-  // Build file content
-  const content = getIgnoreFileContent(ignorePatterns);
+  // Read .gitignore patterns
+  const gitignorePatterns = readGitignore(workspaceRoot);
+
+  // Build file content with merged patterns
+  const content = getIgnoreFileContent(ignorePatterns, gitignorePatterns);
 
   // Write file
   try {
@@ -75,17 +80,35 @@ export async function generateIgnoreFile(context: vscode.ExtensionContext): Prom
 /**
  * Build .aicontextignore file content
  */
-function getIgnoreFileContent(patterns: string[]): string {
-  const lines = [
+function getIgnoreFileContent(patterns: string[], gitignorePatterns: string[]): string {
+  // Merge and deduplicate patterns
+  const allPatterns = new Set([
+    ...gitignorePatterns.filter(p => p.trim()),
+    ...patterns.filter(p => p.trim())
+  ]);
+
+  const lines: string[] = [
     '# AI Context Generator Ignore Patterns',
     '# Syntax follows .gitignore rules',
     '# This file works together with the global aiContext.ignorePatterns setting',
     '#',
+  ];
+
+  // Add comment about .gitignore merge if any patterns were imported
+  if (gitignorePatterns.length > 0) {
+    lines.push('# The following patterns were automatically imported from .gitignore:');
+  }
+
+  lines.push(
+    '#',
     '# You can add project-specific patterns below.',
     '# Lines starting with # are comments.',
     '#',
-    '',
-    ...patterns.filter(p => p.trim()).sort()
-  ];
+    ''
+  );
+
+  // Add all patterns sorted
+  lines.push(...Array.from(allPatterns).sort());
+
   return lines.join('\n');
 }

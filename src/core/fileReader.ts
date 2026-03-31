@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { getLanguageFromPath } from '../utils/languageMapper';
 import { formatFileSize, getRelativePath } from '../utils/fileUtils';
+import { getErrorMessage } from '../utils/errorUtils';
 import { Logger } from './logger';
 import { BinaryMetadataExtractor } from './binaryMetadataExtractor';
 import { AIContextConfig, BINARY_EMOJI, WARNING_EMOJI } from '../config/constants';
@@ -58,6 +59,9 @@ export class FileReader {
     const exceedsThreshold = size > this.config.maxFileSize;
     const isBinary = this.isBinaryFile(filePath);
 
+    // Only set isTruncated if large file degradation is enabled
+    const shouldTruncate = exceedsThreshold && this.config.enableLargeFileDegradation;
+
     if (isBinary) {
       return {
         path: filePath,
@@ -77,7 +81,7 @@ export class FileReader {
       size,
       language: getLanguageFromPath(filePath),
       isBinary: false,
-      isTruncated: exceedsThreshold,
+      isTruncated: shouldTruncate,
     };
   }
 
@@ -106,7 +110,7 @@ export class FileReader {
     try {
       return this.readFile(filePath);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = getErrorMessage(error);
       Logger.warn(`Error reading file ${filePath}: ${message}`);
       return {
         path: filePath,
@@ -125,8 +129,7 @@ export class FileReader {
     try {
       return fs.readFileSync(filePath, 'utf-8');
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to read file: ${message}`);
+      throw new Error(`Failed to read file: ${getErrorMessage(error)}`);
     }
   }
 

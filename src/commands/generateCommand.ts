@@ -7,6 +7,7 @@ import * as path from 'path';
 import { ContextGenerator, GenerationResult } from '../core/contextGenerator';
 import { OutputTarget } from '../config/constants';
 import { Logger } from '../core/logger';
+import { getErrorMessage } from '../utils/errorUtils';
 
 /**
  * Normalize URI inputs to a consistent array format.
@@ -152,47 +153,53 @@ async function generateContext(
       title: 'Generating AI Context...',
       cancellable: false,
     },
-    async progress => {
-      try {
-        progress.report({ message: 'Initializing...' });
-        Logger.debug('Creating ContextGenerator...');
-
-        const generator = new ContextGenerator(workspaceRoot);
-        generator.reloadFromSettings();
-        Logger.debug('ContextGenerator initialized and settings loaded');
-
-        // Use provided outputTarget or show picker
-        const outputTarget = options.outputTarget ?? await showOutputPicker();
-        if (!outputTarget) {
-          Logger.info('Generation cancelled by user (no output target selected)');
-          return;
-        }
-
-        Logger.info(`Output target: ${outputTarget}`);
-        progress.report({ message: 'Scanning files...' });
-
-        const result = await generator.generate({
-          selectedPaths: options.selectedPaths,
-        });
-
-        Logger.logScanComplete(result.fileCount, Date.now() - startTime);
-        Logger.logTokenCount(result.tokenCount, generator.getMaxTokens());
-
-        progress.report({ message: 'Outputting...' });
-
-        await outputResult(result.content, outputTarget, workspaceRoot);
-
-        showResultMessage(result);
-
-        generator.dispose();
-        Logger.info('Generation completed successfully');
-      } catch (error: unknown) {
-        Logger.logError('generateContext', error);
-        const message = error instanceof Error ? error.message : String(error);
-        vscode.window.showErrorMessage(`Failed to generate: ${message}`);
-      }
-    }
+    progress => executeGeneration(progress, workspaceRoot, options, startTime)
   );
+}
+
+async function executeGeneration(
+  progress: { report: (message: { message: string }) => void },
+  workspaceRoot: string,
+  options: { selectedPaths: string[]; outputTarget?: OutputTarget },
+  startTime: number
+): Promise<void> {
+  try {
+    progress.report({ message: 'Initializing...' });
+    Logger.debug('Creating ContextGenerator...');
+
+    const generator = new ContextGenerator(workspaceRoot);
+    generator.reloadFromSettings();
+    Logger.debug('ContextGenerator initialized and settings loaded');
+
+    // Use provided outputTarget or show picker
+    const outputTarget = options.outputTarget ?? await showOutputPicker();
+    if (!outputTarget) {
+      Logger.info('Generation cancelled by user (no output target selected)');
+      generator.dispose();
+      return;
+    }
+
+    Logger.info(`Output target: ${outputTarget}`);
+    progress.report({ message: 'Scanning files...' });
+
+    const result = await generator.generate({
+      selectedPaths: options.selectedPaths,
+    });
+
+    Logger.logScanComplete(result.fileCount, Date.now() - startTime);
+    Logger.logTokenCount(result.tokenCount, generator.getMaxTokens());
+
+    progress.report({ message: 'Outputting...' });
+
+    await outputResult(result.content, outputTarget, workspaceRoot);
+    showResultMessage(result);
+
+    generator.dispose();
+    Logger.info('Generation completed successfully');
+  } catch (error: unknown) {
+    Logger.logError('generateContext', error);
+    vscode.window.showErrorMessage(`Failed to generate: ${getErrorMessage(error)}`);
+  }
 }
 
 async function outputResult(content: string, target: OutputTarget, workspaceRoot: string): Promise<void> {

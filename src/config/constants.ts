@@ -24,6 +24,8 @@ export interface AIContextConfig {
   outlineIncludePrivate: boolean;
   outlineExtractComments: boolean;
   outlineMaxItems: number;
+  // Large file degradation setting
+  enableLargeFileDegradation: boolean;
 }
 
 export const DEFAULT_CONFIG: AIContextConfig = {
@@ -46,6 +48,8 @@ export const DEFAULT_CONFIG: AIContextConfig = {
   outlineIncludePrivate: false,
   outlineExtractComments: true,
   outlineMaxItems: 50,
+  // Large file degradation default
+  enableLargeFileDegradation: true,
 };
 
 export const IGNORE_FILE_NAME = '.aicontextignore';
