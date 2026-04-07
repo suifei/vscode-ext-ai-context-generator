@@ -4,7 +4,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as mammoth from 'mammoth';
 import { FileReadResult } from '../core/fileReader';
 import { AIContextConfig, WARNING_EMOJI, SECTION_SEPARATOR } from '../config/constants';
 import { getRelativePath } from '../utils/fileUtils';
@@ -34,6 +33,9 @@ export class WordAnalyzer {
     }
 
     try {
+      // Dynamically require mammoth to avoid loading issues
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const mammoth = require('mammoth');
       // Read Word file using mammoth - extract full text first
       const dataBuffer = fs.readFileSync(fileResult.path);
       const result = await mammoth.extractRawText({ buffer: dataBuffer });

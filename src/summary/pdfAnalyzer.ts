@@ -4,8 +4,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const pdfParse = require('pdf-parse');
 import { FileReadResult } from '../core/fileReader';
 import { AIContextConfig, WARNING_EMOJI, SECTION_SEPARATOR } from '../config/constants';
 import { getRelativePath } from '../utils/fileUtils';
@@ -40,9 +38,12 @@ export class PdfAnalyzer {
     }
 
     try {
+      // Dynamically require pdf-parse to avoid loading issues
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const pdfParse = require('pdf-parse');
       // Read PDF file and extract full text first
       const dataBuffer = fs.readFileSync(fileResult.path);
-      const pdfData = await this.parsePdf(dataBuffer);
+      const pdfData = await this.parsePdf(dataBuffer, pdfParse);
 
       // Clean the extracted text
       const cleanedText = cleanText(pdfData.text);
@@ -89,9 +90,9 @@ export class PdfAnalyzer {
   /**
    * Parse PDF with error handling
    */
-  private async parsePdf(buffer: Buffer): Promise<PdfData> {
+  private async parsePdf(buffer: Buffer, pdfParse: unknown): Promise<PdfData> {
     return new Promise((resolve, reject) => {
-      pdfParse(buffer, (err: Error | null, data: PdfData) => {
+      (pdfParse as any)(buffer, (err: Error | null, data: PdfData) => {
         if (err) {
           reject(err);
         } else {

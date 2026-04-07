@@ -3,7 +3,6 @@
  */
 
 import * as path from 'path';
-import * as XLSX from 'xlsx';
 import { FileReadResult } from '../core/fileReader';
 import { AIContextConfig, WARNING_EMOJI, SECTION_SEPARATOR } from '../config/constants';
 import { getRelativePath } from '../utils/fileUtils';
@@ -17,6 +16,11 @@ interface SheetInfo {
   headers: string[];
   columnTypes: string[];
   sampleValues: string[][];
+}
+
+interface WorkBook {
+  Sheets: Record<string, unknown>;
+  SheetNames: string[];
 }
 
 export class ExcelAnalyzer {
@@ -35,6 +39,9 @@ export class ExcelAnalyzer {
     }
 
     try {
+      // Dynamically require xlsx to avoid loading issues
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const XLSX = require('xlsx');
       // Read Excel file
       const workbook = XLSX.readFile(fileResult.path);
       const sheetNames = workbook.SheetNames;
@@ -46,7 +53,7 @@ export class ExcelAnalyzer {
       // Analyze each sheet
       const sheets: SheetInfo[] = [];
       for (const sheetName of sheetNames) {
-        const sheetInfo = this.analyzeSheet(workbook, sheetName);
+        const sheetInfo = this.analyzeSheet(workbook, sheetName, XLSX);
         if (sheetInfo) {
           sheets.push(sheetInfo);
         }
@@ -63,13 +70,13 @@ export class ExcelAnalyzer {
   /**
    * Analyze a single sheet
    */
-  private analyzeSheet(workbook: XLSX.WorkBook, sheetName: string): SheetInfo | null {
+  private analyzeSheet(workbook: WorkBook, sheetName: string, XLSX: any): SheetInfo | null {
     try {
       const worksheet = workbook.Sheets[sheetName];
       if (!worksheet) return null;
 
       // Convert to array of arrays
-      const jsonData = XLSX.utils.sheet_to_json<string[]>(worksheet, {
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
         header: 1,
         defval: ''
       });

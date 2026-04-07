@@ -4,8 +4,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const PPTX = require('pptx-parser');
 import { FileReadResult } from '../core/fileReader';
 import { AIContextConfig, WARNING_EMOJI, SECTION_SEPARATOR } from '../config/constants';
 import { getRelativePath } from '../utils/fileUtils';
@@ -35,6 +33,9 @@ export class PptxAnalyzer {
     }
 
     try {
+      // Dynamically require pptx-parser to avoid loading browser-only dependencies
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const PPTX = require('pptx-parser');
       // Read PPTX file - extract full text first
       const dataBuffer = fs.readFileSync(fileResult.path);
       const pptxData = await PPTX.parse(dataBuffer);
