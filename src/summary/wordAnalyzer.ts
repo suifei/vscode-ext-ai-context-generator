@@ -10,7 +10,7 @@ import { AIContextConfig, WARNING_EMOJI, SECTION_SEPARATOR } from '../config/con
 import { getRelativePath } from '../utils/fileUtils';
 import { getErrorMessage } from '../utils/errorUtils';
 import { Logger } from '../core/logger';
-import { cleanText, summarizeText, extractKeySentences, splitIntoSentences } from '../utils/textSummarizer';
+import { cleanText, summarizeText, extractKeySentences } from '../utils/textSummarizer';
 
 interface WordParagraph {
   type: 'heading' | 'normal';
@@ -153,7 +153,7 @@ export class WordAnalyzer {
     relativePath: string,
     fullText: string,
     paragraphs: WordParagraph[],
-    textLength: number
+    _textLength: number
   ): string {
     let output = '';
 
@@ -207,7 +207,7 @@ export class WordAnalyzer {
     relativePath: string,
     fullText: string,
     paragraphs: WordParagraph[],
-    textLength: number
+    _textLength: number
   ): string {
     let output = '';
 

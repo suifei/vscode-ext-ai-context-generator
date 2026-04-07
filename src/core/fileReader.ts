@@ -9,7 +9,7 @@ import { formatFileSize, getRelativePath } from '../utils/fileUtils';
 import { getErrorMessage } from '../utils/errorUtils';
 import { Logger } from './logger';
 import { BinaryMetadataExtractor } from './binaryMetadataExtractor';
-import { AIContextConfig, BINARY_EMOJI, WARNING_EMOJI } from '../config/constants';
+import { AIContextConfig, WARNING_EMOJI } from '../config/constants';
 
 export interface FileReadResult {
   path: string;

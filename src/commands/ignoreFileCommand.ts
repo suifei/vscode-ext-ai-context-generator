@@ -4,14 +4,13 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
-import * as fs from 'fs';
 import { DEFAULT_CONFIG, IGNORE_FILE_NAME } from '../config/constants';
 import { readGitignore } from '../utils/gitUtils';
 
 /**
  * Generate .aicontextignore file in workspace root
  */
-export async function generateIgnoreFile(context: vscode.ExtensionContext): Promise<void> {
+export async function generateIgnoreFile(_context: vscode.ExtensionContext): Promise<void> {
   // Get workspace root
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   if (!workspaceFolder) {

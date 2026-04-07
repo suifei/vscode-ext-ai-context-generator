@@ -9,7 +9,6 @@ import { Logger } from '../core/logger';
 import {
   OUTLINE_SEPARATOR,
   SECTION_TITLES,
-  truncateText,
   extractCodeSignature,
 } from './formatConstants';
 import type { OutlineOptions } from './registry';

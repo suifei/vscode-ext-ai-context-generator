@@ -85,12 +85,13 @@ export class PptxAnalyzer {
   /**
    * Extract slide content from PPTX data
    */
-  private extractSlides(pptxData: any): SlideContent[] {
+  private extractSlides(pptxData: unknown): SlideContent[] {
     const slides: SlideContent[] = [];
 
     try {
       // pptx-parser returns an object with slides array
-      const slidesData = pptxData.slides || [];
+      const data = pptxData as { slides?: unknown[] } | undefined;
+      const slidesData = data?.slides || [];
 
       for (let i = 0; i < slidesData.length; i++) {
         const slideData = slidesData[i];
@@ -108,28 +109,38 @@ export class PptxAnalyzer {
           if (Array.isArray(slideData)) {
             for (const item of slideData) {
               if (item && typeof item === 'object') {
-                if (item.text) texts.push(item.text);
-                if (item.content) texts.push(item.content);
-                if (item.value) texts.push(item.value);
+                const itemObj = item as Record<string, unknown>;
+                if (typeof itemObj.text === 'string') texts.push(itemObj.text);
+                if (typeof itemObj.content === 'string') texts.push(itemObj.content);
+                if (typeof itemObj.value === 'string') texts.push(itemObj.value);
               }
             }
-          } else if (typeof slideData === 'object') {
+          } else if (typeof slideData === 'object' && slideData !== null) {
             // Single object slide
-            if (slideData.title) title = slideData.title;
-            if (slideData.text) content = slideData.text;
-            if (slideData.content) content = slideData.content;
+            const slideObj = slideData as Record<string, unknown>;
+            if (typeof slideObj.title === 'string') title = slideObj.title;
+            if (typeof slideObj.text === 'string') content = slideObj.text;
+            if (typeof slideObj.content === 'string') content = slideObj.content;
 
             // Try to get all text from shapes or elements
-            if (slideData.elements && Array.isArray(slideData.elements)) {
-              for (const elem of slideData.elements) {
-                if (elem.text) texts.push(elem.text);
-                if (elem.content) texts.push(elem.content);
+            const elements = slideObj.elements as unknown[] | undefined;
+            if (elements && Array.isArray(elements)) {
+              for (const elem of elements) {
+                if (elem && typeof elem === 'object') {
+                  const elemObj = elem as Record<string, unknown>;
+                  if (typeof elemObj.text === 'string') texts.push(elemObj.text);
+                  if (typeof elemObj.content === 'string') texts.push(elemObj.content);
+                }
               }
             }
-            if (slideData.shapes && Array.isArray(slideData.shapes)) {
-              for (const shape of slideData.shapes) {
-                if (shape.text) texts.push(shape.text);
-                if (shape.content) texts.push(shape.content);
+            const shapes = slideObj.shapes as unknown[] | undefined;
+            if (shapes && Array.isArray(shapes)) {
+              for (const shape of shapes) {
+                if (shape && typeof shape === 'object') {
+                  const shapeObj = shape as Record<string, unknown>;
+                  if (typeof shapeObj.text === 'string') texts.push(shapeObj.text);
+                  if (typeof shapeObj.content === 'string') texts.push(shapeObj.content);
+                }
               }
             }
           }
@@ -169,8 +180,8 @@ export class PptxAnalyzer {
     relativePath: string,
     fullText: string,
     slides: SlideContent[],
-    totalSlides: number,
-    totalText: number
+    _totalSlides: number,
+    _totalText: number
   ): string {
     let output = '';
 
@@ -218,8 +229,8 @@ export class PptxAnalyzer {
     relativePath: string,
     fullText: string,
     slides: SlideContent[],
-    totalSlides: number,
-    totalText: number
+    _totalSlides: number,
+    _totalText: number
   ): string {
     let output = '';
 

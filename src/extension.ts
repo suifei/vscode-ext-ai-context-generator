@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode';
-import { OutlineExtractorRegistry } from './outline/registry';
 import { Logger, LogLevel } from './core/logger';
 import { generate, generateToClipboard, generateToFile, generateToPreview } from './commands/generateCommand';
 import { configureSettings } from './commands/configureCommand';
@@ -65,7 +64,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const generateIgnoreFileCommand = vscode.commands.registerCommand(
     'aiContext.generate.ignoreFile',
-    (uri, selectedFiles) => generateIgnoreFile(context)
+    (_uri, _selectedFiles) => generateIgnoreFile(context)
   );
 
   const toggleLargeFileDegradationCommand = vscode.commands.registerCommand(

@@ -132,7 +132,7 @@ export class BinaryMetadataExtractor {
     const bitDepth = buffer[24];
     const colorType = buffer[25];
 
-    let colorDepth = `${bitDepth}-bit`;
+    const colorDepth = `${bitDepth}-bit`;
     let hasAlpha = false;
 
     // Color type: 0=grayscale, 2=RGB, 3=palette, 4=grayscale+alpha, 6=RGB+alpha
@@ -301,8 +301,8 @@ export class BinaryMetadataExtractor {
     // Check for ID3v2 tag
     if (bytesRead >= 10 && buffer[0] === 0x49 && buffer[1] === 0x44 && buffer[2] === 0x33) {
       // ID3v2 header: size at bytes 6-9 (syncsafe integer)
-      const id3Size = ((buffer[6] & 0x7F) << 21) | ((buffer[7] & 0x7F) << 14) |
-                      ((buffer[8] & 0x7F) << 7) | (buffer[9] & 0x7F);
+      const _id3Size = ((buffer[6] & 0x7F) << 21) | ((buffer[7] & 0x7F) << 14) |
+                       ((buffer[8] & 0x7F) << 7) | (buffer[9] & 0x7F);
 
       // Try to find frame headers after ID3 tag (not accurate without full parsing)
       return {
@@ -451,8 +451,6 @@ export class BinaryMetadataExtractor {
 
     // Compression method at byte 2
     const compressionMethod = buffer[2];
-    // Flags at byte 3
-    const flags = buffer[3];
 
     return {
       compression: compressionMethod === 8 ? 'DEFLATE' : `method-${compressionMethod}`,

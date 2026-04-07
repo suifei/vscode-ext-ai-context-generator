@@ -13,12 +13,6 @@ interface ScoredSentence extends Sentence {
   score: number;
 }
 
-interface SentenceSimilarity {
-  sentence1: number;
-  sentence2: number;
-  similarity: number;
-}
-
 /**
  * Clean text by removing excessive whitespace and empty lines
  */

@@ -133,7 +133,7 @@ export class PdfAnalyzer {
     fullText: string,
     pages: PdfPage[],
     totalPages: number,
-    textLength: number
+    _textLength: number
   ): string {
     let output = '';
 
@@ -187,8 +187,8 @@ export class PdfAnalyzer {
     relativePath: string,
     fullText: string,
     pages: PdfPage[],
-    totalPages: number,
-    textLength: number
+    _totalPages: number,
+    _textLength: number
   ): string {
     let output = '';
 
@@ -212,7 +212,8 @@ export class PdfAnalyzer {
     // Clean up whitespace
     let cleaned = text.replace(/\s+/g, ' ').trim();
 
-    // Remove common PDF artifacts
+    // Remove common PDF artifacts (control characters)
+    // eslint-disable-next-line no-control-regex
     cleaned = cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
     if (cleaned.length > maxLength) {

@@ -2,7 +2,6 @@
  * Excel analyzer: workbook structure with sheet summaries (similar to CSV)
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import * as XLSX from 'xlsx';
 import { FileReadResult } from '../core/fileReader';

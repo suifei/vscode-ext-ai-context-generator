@@ -6,7 +6,6 @@
 import * as vscode from 'vscode';
 import { Logger } from '../core/logger';
 import {
-  OUTLINE_SEPARATOR,
   SECTION_TITLES,
   formatSectionHeader,
   truncateText,
