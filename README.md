@@ -20,10 +20,12 @@ A VSCode extension that generates structured Markdown context from project files
   - Code files: Full content with syntax highlighting
   - Large files (>50KB): AST-based outline (TS/Py/Go/Rust/Java/C++)
   - Logs/CSV/Config: Smart summaries
+  - **Office Documents**: Text extraction with smart summarization (PDF/Word/Excel/PowerPoint)
   - Binary: Metadata extraction
 - **Flexible Output**: Clipboard, file, or preview tab
 - **Token Counting**: Tiktoken (accurate) or simple estimation
 - **Custom Templates**: `.ai_context_templates/*.md` with variables
+- **Smart Text Summarization**: TextRank algorithm for intelligent content compression
 
 ### Installation
 
@@ -87,6 +89,10 @@ The extension uses a **layered processing architecture** that automatically sele
 | Data files (.csv/.tsv) | Structure inference | Field types, sample data, statistics |
 | Config files (JSON/YAML) | Smart summarization | Structure skeleton, sensitive data redaction |
 | Document files (.md/.txt) | Content analysis | Section outline, keyword extraction |
+| **PDF (.pdf)** | Text extraction + TextRank summary | Page structure, key sentences |
+| **Word (.docx)** | Text extraction + TextRank summary | Paragraph structure, key points |
+| **Excel (.xlsx/.xls)** | Spreadsheet analysis | Sheet schemas, column types, sample data |
+| **PowerPoint (.pptx)** | Slide text extraction | Slide titles, content summary |
 | Binary files | Metadata extraction | Format info, dimensions/duration, etc. |
 
 ### 🏗️ AST Outline Extraction Algorithm
@@ -113,6 +119,16 @@ For non-code files, the extension has **dedicated analyzers**:
 - **Config Analyzer**: Parses JSON/YAML structure, auto-redacts sensitive fields (password/token/secret)
 - **Doc Analyzer**: Extracts Markdown heading hierarchy, keywords, and paragraph summaries
 - **CSV Analyzer**: Infers field types, detects numeric ranges, provides data samples
+- **PDF Analyzer**: Extracts text with page structure, uses TextRank for intelligent summarization
+- **Word Analyzer**: Extracts .docx text with paragraph detection, generates smart summaries
+- **Excel Analyzer**: Analyzes workbook structure, multiple sheets with schema inference
+- **PowerPoint Analyzer**: Extracts slide titles and content, provides presentation summary
+
+**TextRank Algorithm**:
+- Jaccard similarity for sentence ranking (supports UTF-8/Unicode)
+- Extracts key sentences based on content importance
+- Preserves sentence structure and readability
+- Works with both English and Chinese text
 
 ### ⚡ Performance Optimization Design
 
@@ -182,6 +198,7 @@ VSCode 扩展，将项目代码转换为结构化 Markdown 上下文，用于 AI
   - 代码文件: 完整内容 + 语法高亮
   - 大文件 (>50KB): AST 结构大纲（TS/Py/Go/Rust/Java/C++）
   - 日志/CSV/配置: 智能摘要
+  - **Office 文档**: 文本提取 + 智能摘要（PDF/Word/Excel/PowerPoint）
   - 二进制: 元数据提取
 - **灵活输出**: 剪贴板、文件、预览标签页
 - **Token 计数**: Tiktoken 精确计数或简单估算
@@ -249,6 +266,10 @@ dist/**
 | 数据文件 (.csv/.tsv) | 结构推断 | 字段类型、样本数据、统计信息 |
 | 配置文件 (JSON/YAML) | 智能摘要 | 结构骨架、敏感数据脱敏 |
 | 文档文件 (.md/.txt) | 内容分析 | 章节大纲、关键词提取 |
+| **PDF (.pdf)** | 文本提取 + TextRank 摘要 | 页面结构、关键句子 |
+| **Word (.docx)** | 文本提取 + TextRank 摘要 | 段落结构、关键点 |
+| **Excel (.xlsx/.xls)** | 表格分析 | 工作表结构、列类型、样本数据 |
+| **PowerPoint (.pptx)** | 幻灯片文本提取 | 幻灯片标题、内容摘要 |
 | 二进制文件 | 元数据提取 | 格式信息、尺寸/时长等 |
 
 ### 🏗️ AST 大纲提取算法
@@ -275,6 +296,16 @@ dist/**
 - **配置分析器**：解析 JSON/YAML 结构、自动脱敏敏感字段 (password/token/secret)
 - **文档分析器**：提取 Markdown 标题层级、关键词和段落摘要
 - **CSV 分析器**：推断字段类型、检测数值范围、提供数据样本
+- **PDF 分析器**：提取文本并按页面结构组织，使用 TextRank 生成智能摘要
+- **Word 分析器**：提取 .docx 文本并检测段落结构，生成智能摘要
+- **Excel 分析器**：分析工作簿结构，支持多个工作表的类型推断
+- **PowerPoint 分析器**：提取幻灯片标题和内容，生成演示文稿摘要
+
+**TextRank 算法**：
+- 使用 Jaccard 相似度进行句子排序（支持 UTF-8/Unicode）
+- 基于内容重要性提取关键句子
+- 保持句子结构和可读性
+- 同时支持中英文文本
 
 ### ⚡ 性能优化设计
 

@@ -135,10 +135,18 @@ export class FileReader {
 
   /**
    * Check if a file is binary
+   * Office/PDF files are NOT considered binary here - they are handled by specialized analyzers
    */
   private isBinaryFile(filePath: string): boolean {
     const ext = path.extname(filePath).toLowerCase();
 
+    // Office/PDF files are handled by specialized analyzers, not as binary files
+    const documentExtensions = ['.pdf', '.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls'];
+    if (documentExtensions.includes(ext)) {
+      return false;
+    }
+
+    // Check against configured binary patterns
     for (const pattern of this.config.binaryFilePatterns) {
       if (pattern === '*.' + ext || pattern === ext) {
         return true;

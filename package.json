@@ -2,7 +2,7 @@
   "name": "ai-context-generator-advanced",
   "displayName": "AI Context Generator (Advanced)",
   "description": "%description%",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "publisher": "suifei",
   "icon": "assets/logo.png",
   "licenses": [
@@ -346,7 +346,11 @@
   },
   "dependencies": {
     "ignore": "^5.3.1",
-    "js-tiktoken": "^1.0.12"
+    "js-tiktoken": "^1.0.12",
+    "mammoth": "^1.12.0",
+    "pdf-parse": "^2.4.5",
+    "pptx-parser": "^1.1.7-beta.9",
+    "xlsx": "^0.18.5"
   },
   "repository": {
     "type": "git",
