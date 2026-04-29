@@ -35,7 +35,7 @@ export class ConfigAnalyzer {
 
     if (parseError) {
       output += `// Parse error: ${parseError}\n// Showing preview:\n\n`;
-      output += fileResult.content.substring(0, 500);
+      output += this.redactSensitivePreview(fileResult.content.substring(0, 500));
       return output;
     }
 
@@ -92,6 +92,33 @@ export class ConfigAnalyzer {
     return this.config.sensitiveKeyPatterns.some(pattern =>
       lowerKey.includes(pattern.toLowerCase())
     );
+  }
+
+  private redactSensitivePreview(content: string): string {
+    return content
+      .split('\n')
+      .map(line => {
+        const separatorIndex = this.findKeyValueSeparator(line);
+        if (separatorIndex <= 0) {
+          return line;
+        }
+
+        const key = line.substring(0, separatorIndex).replace(/["'\s{}]/g, '');
+        if (!this.isSensitiveKey(key)) {
+          return line;
+        }
+
+        return `${line.substring(0, separatorIndex + 1)} [REDACTED]`;
+      })
+      .join('\n');
+  }
+
+  private findKeyValueSeparator(line: string): number {
+    const colonIndex = line.indexOf(':');
+    const equalsIndex = line.indexOf('=');
+    if (colonIndex === -1) return equalsIndex;
+    if (equalsIndex === -1) return colonIndex;
+    return Math.min(colonIndex, equalsIndex);
   }
 
   private indent(str: string): string {

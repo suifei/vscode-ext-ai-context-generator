@@ -47,9 +47,9 @@ export class ContextGenerator {
 
   constructor(workspaceRoot: string, config: Partial<AIContextConfig> = {}) {
     this.workspaceRoot = workspaceRoot;
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.config = this.sanitizeConfig({ ...DEFAULT_CONFIG, ...config });
 
-    this.ignoreFilter = new IgnoreFilter(workspaceRoot, this.config.ignorePatterns, this.config.binaryFilePatterns);
+    this.ignoreFilter = new IgnoreFilter(workspaceRoot, this.config.ignorePatterns);
     this.fileScanner = new FileScanner(this.ignoreFilter);
     this.fileReader = new FileReader(this.config, workspaceRoot);
     this.tokenCounter = new TokenCounter(this.config.tokenEstimation);
@@ -175,8 +175,8 @@ export class ContextGenerator {
     // Only use outline for large files (isTruncated)
     if (!result.isTruncated) return false;
 
-    // Check if language supports outline extraction
-    return OutlineExtractorRegistry.hasASTSupport(result.language || '');
+    // Check if language supports VSCode/LSP symbol extraction
+    return OutlineExtractorRegistry.hasSymbolSupport(result.language || '');
   }
 
   /**
@@ -290,16 +290,16 @@ export class ContextGenerator {
   }
 
   updateConfig(config: Partial<AIContextConfig>): void {
-    this.config = { ...this.config, ...config };
-    this.ignoreFilter.reload(this.config.ignorePatterns, this.config.binaryFilePatterns);
+    this.config = this.sanitizeConfig({ ...this.config, ...config });
+    this.ignoreFilter.reload(this.config.ignorePatterns);
     this.refreshDependents();
   }
 
   reloadFromSettings(): void {
     const vscodeConfig = vscode.workspace.getConfiguration('aiContext');
     const config = this.loadConfigFromSettings(vscodeConfig);
-    this.config = { ...DEFAULT_CONFIG, ...config };
-    this.ignoreFilter.reload(this.config.ignorePatterns, this.config.binaryFilePatterns);
+    this.config = this.sanitizeConfig({ ...DEFAULT_CONFIG, ...config });
+    this.ignoreFilter.reload(this.config.ignorePatterns);
     this.refreshDependents();
   }
 
@@ -322,6 +322,19 @@ export class ContextGenerator {
     }
 
     return result;
+  }
+
+  private sanitizeConfig(config: AIContextConfig): AIContextConfig {
+    return {
+      ...config,
+      maxFileSize: Math.max(1, Math.floor(config.maxFileSize || DEFAULT_CONFIG.maxFileSize)),
+      maxTokens: Math.max(1, Math.floor(config.maxTokens || DEFAULT_CONFIG.maxTokens)),
+      textPreviewLength: Math.max(1, Math.floor(config.textPreviewLength || DEFAULT_CONFIG.textPreviewLength)),
+      logSampleLines: Math.max(0, Math.floor(config.logSampleLines || 0)),
+      csvSampleRows: Math.max(0, Math.floor(config.csvSampleRows || 0)),
+      parallelFileReads: Math.max(1, Math.floor(config.parallelFileReads || DEFAULT_CONFIG.parallelFileReads)),
+      outlineMaxItems: Math.min(200, Math.max(10, Math.floor(config.outlineMaxItems || DEFAULT_CONFIG.outlineMaxItems))),
+    };
   }
 
   getAvailableTemplates(): string[] {

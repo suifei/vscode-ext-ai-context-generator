@@ -25,7 +25,7 @@ export class LogAnalyzer {
     const errorLines: string[] = [];
 
     const samplesByLevel = this.initSamplesMap();
-    const maxSamples = this.config.logSampleLines;
+    const maxSamples = Math.max(0, Math.floor(this.config.logSampleLines || 0));
 
     for (const line of lines) {
       const levelMatch = line.match(levelPattern);

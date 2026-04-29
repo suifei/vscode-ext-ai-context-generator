@@ -211,7 +211,8 @@ async function outputResult(content: string, target: OutputTarget, workspaceRoot
 
     case 'file': {
       const config = vscode.workspace.getConfiguration('aiContext');
-      const fileName = config.get<string>('outputFileName', 'ai-context.md');
+      const configuredFileName = config.get<string>('outputFileName', 'ai-context.md');
+      const fileName = sanitizeOutputFileName(configuredFileName);
       const filePath = path.join(workspaceRoot, fileName);
 
       // Check if file exists and confirm overwrite
@@ -248,6 +249,13 @@ async function outputResult(content: string, target: OutputTarget, workspaceRoot
       break;
     }
   }
+}
+
+function sanitizeOutputFileName(fileName: string | undefined): string {
+  const fallback = 'ai-context.md';
+  const trimmed = fileName?.trim() || fallback;
+  const baseName = path.basename(trimmed);
+  return baseName && baseName !== '.' && baseName !== '..' ? baseName : fallback;
 }
 
 function showResultMessage(result: GenerationResult): void {

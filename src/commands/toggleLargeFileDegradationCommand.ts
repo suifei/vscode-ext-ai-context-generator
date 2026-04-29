@@ -17,8 +17,8 @@ export async function toggleLargeFileDegradation(): Promise<void> {
 
   // Show notification
   const message = newValue
-    ? 'Large file degradation enabled. Files exceeding maxFileSize will use outline/summary mode.'
-    : 'Large file degradation disabled. All files will be read in full (may use more tokens).';
+    ? 'Large file degradation enabled. Files exceeding maxFileSize can use outline/summary mode.'
+    : 'Large file degradation disabled. File size alone will not trigger outline/summary mode.';
 
   vscode.window.showInformationMessage(message);
 }

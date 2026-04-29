@@ -12,11 +12,9 @@ import { normalizePathSeparators } from '../utils/fileUtils';
 export class IgnoreFilter {
   private ignoreInstance: ReturnType<typeof Ignore>;
   private readonly workspaceRoot: string;
-  private readonly binaryPatterns: string[];
 
-  constructor(workspaceRoot: string, additionalPatterns: string[] = [], binaryPatterns: string[] = []) {
+  constructor(workspaceRoot: string, additionalPatterns: string[] = []) {
     this.workspaceRoot = workspaceRoot;
-    this.binaryPatterns = binaryPatterns;
     this.ignoreInstance = Ignore();
     this.loadPatterns(additionalPatterns);
   }
@@ -43,14 +41,9 @@ export class IgnoreFilter {
     }
 
     this.ignoreInstance = this.ignoreInstance.add(additionalPatterns);
-    this.ignoreInstance = this.ignoreInstance.add(this.binaryPatterns);
   }
 
-  reload(additionalPatterns: string[] = [], binaryPatterns?: string[]): void {
-    if (binaryPatterns) {
-      this.binaryPatterns.length = 0;
-      this.binaryPatterns.push(...binaryPatterns);
-    }
+  reload(additionalPatterns: string[] = []): void {
     this.loadPatterns(additionalPatterns);
   }
 

@@ -4,8 +4,9 @@
 
 import * as vscode from 'vscode';
 import { OutlineExtractor } from './outlineExtractor';
-import { ASTExtractor } from './astExtractor';
+import { LspOutlineExtractor } from './astExtractor';
 import { RegexFallback } from './regexFallback';
+import { TypeScriptSemanticExtractor } from './typescriptSemanticExtractor';
 import { Logger } from '../core/logger';
 
 export interface OutlineOptions {
@@ -36,8 +37,18 @@ export class OutlineExtractorRegistry {
     'c', 'cpp', 'csharp',
   ]);
 
-  // Enhanced AST extractor for languages with good LSP support
-  private static readonly astExtractor = new ASTExtractor();
+  private static readonly TS_JS_LANGUAGES = new Set([
+    'typescript',
+    'typescriptreact',
+    'javascript',
+    'javascriptreact',
+  ]);
+
+  /** TS/JS: Compiler API semantic summary first */
+  private static readonly semanticExtractor = new TypeScriptSemanticExtractor();
+
+  // Enhanced extractor for languages with good LSP/DocumentSymbol support
+  private static readonly lspExtractor = new LspOutlineExtractor();
   // Basic extractor as fallback
   private static readonly basicExtractor = new OutlineExtractor();
   // Regex-based fallback for all languages
@@ -53,9 +64,10 @@ export class OutlineExtractorRegistry {
    * Extract outline from document using the best available method
    *
    * Extraction strategy:
-   * 1. ASTExtractor (hierarchical DocumentSymbol API) for supported languages
-   * 2. Basic OutlineExtractor (flat SymbolInformation API) as intermediate
-   * 3. RegexFallback as final fallback
+   * 1. TypeScriptSemanticExtractor (Compiler API) for TS/JS when available
+   * 2. LspOutlineExtractor (hierarchical DocumentSymbol API) for supported languages
+   * 3. Basic OutlineExtractor (flat SymbolInformation API) as intermediate
+   * 4. RegexFallback as final fallback
    *
    * @param document The document to extract outline from
    * @param options Configuration options for outline extraction
@@ -74,18 +86,29 @@ export class OutlineExtractorRegistry {
 
     let result: string;
 
-    // Try AST extractor first for supported languages
+    // TS/JS: try semantic function-level summary first
+    if (this.TS_JS_LANGUAGES.has(languageId)) {
+      Logger.debug(`Using TypeScript/JavaScript semantic extractor for ${languageId}`);
+      result = await this.semanticExtractor.extract(document, mergedOptions);
+
+      if (this.isValidOutline(result)) {
+        this.setInCache(cacheKey, result, document.version);
+        return result;
+      }
+    }
+
+    // Try LSP/DocumentSymbol extraction for supported languages
     if (this.SUPPORTED_LANGUAGES.has(languageId)) {
-      Logger.debug(`Using AST extractor for ${languageId}`);
-      result = await this.astExtractor.extract(document, mergedOptions);
+      Logger.debug(`Using LSP symbol extractor for ${languageId}`);
+      result = await this.lspExtractor.extract(document, mergedOptions);
 
       if (this.isValidOutline(result)) {
         this.setInCache(cacheKey, result, document.version);
         return result;
       }
 
-      // AST extraction insufficient, try basic extractor
-      Logger.debug(`AST extraction insufficient, trying basic extractor`);
+      // Hierarchical symbol extraction insufficient, try basic extractor
+      Logger.debug(`LSP DocumentSymbol extraction insufficient, trying SymbolInformation extractor`);
       result = await this.basicExtractor.extract(document, mergedOptions);
 
       if (this.isValidOutline(result)) {
@@ -182,19 +205,26 @@ export class OutlineExtractorRegistry {
   private static isValidOutline(outline: string): boolean {
     if (!outline || outline.trim().length === 0) return false;
 
-    // Check for actual symbol definitions (section headers)
-    const hasSymbols = /^\/\/\s+(TYPES|FUNCTIONS|IMPORTS|DEPENDENCIES)/m.test(outline);
+    // Legacy LSP/regex sections, or TS semantic compact outline (v1.3+)
+    const hasLegacyHeader = /^\/\/\s+(TYPES|FUNCTIONS|IMPORTS|DEPENDENCIES)/m.test(outline);
+    const hasSemanticCompact = /──\s*semantic|·\s*v1\.\d|^\s*fn\s/m.test(outline);
 
-    // Also check for reasonable content length
     const hasContent = outline.trim().length >= 50;
 
-    return hasSymbols && hasContent;
+    return (hasLegacyHeader || hasSemanticCompact) && hasContent;
   }
 
   /**
-   * Check if a language has AST support (uses VSCode LSP)
+   * Check if a language has LSP symbol support through VSCode providers
+   */
+  static hasSymbolSupport(languageId: string): boolean {
+    return this.SUPPORTED_LANGUAGES.has(languageId.toLowerCase());
+  }
+
+  /**
+   * @deprecated Use hasSymbolSupport. Kept for compatibility with older callers/tests.
    */
   static hasASTSupport(languageId: string): boolean {
-    return this.SUPPORTED_LANGUAGES.has(languageId.toLowerCase());
+    return this.hasSymbolSupport(languageId);
   }
 }

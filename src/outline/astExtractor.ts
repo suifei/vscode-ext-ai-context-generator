@@ -1,6 +1,6 @@
 /**
- * Enhanced AST-based outline extractor using VSCode's DocumentSymbol API
- * Provides hierarchical symbol information with parent-child relationships
+ * LSP-based outline extractor using VSCode's DocumentSymbol API.
+ * Provides hierarchical symbol information with parent-child relationships.
  */
 
 import * as vscode from 'vscode';
@@ -23,7 +23,7 @@ interface SymbolNode {
   isPrivate?: boolean;
 }
 
-export class ASTExtractor extends OutlineExtractor {
+export class LspOutlineExtractor extends OutlineExtractor {
   protected options: Required<OutlineOptions>;
 
   constructor() {
@@ -47,7 +47,7 @@ export class ASTExtractor extends OutlineExtractor {
 
       return this.formatDocumentSymbols(symbols, document);
     } catch (error) {
-      Logger.warn(`AST extraction failed for ${document.uri.fsPath}:`, error);
+      Logger.warn(`LSP symbol extraction failed for ${document.uri.fsPath}:`, error);
       return super.extract(document, options);
     }
   }
@@ -205,12 +205,13 @@ export class ASTExtractor extends OutlineExtractor {
     const indent = '//   '.repeat(depth);
     const lineInfo = this.getDetailLevel() === 'basic' ? '' : this.getLineInfo(node.range, document);
     const kindName = this.getSymbolKindName(node.kind);
+    const docSuffix = this.getDocSuffix(document, node.range.start.line);
 
     // Type declaration
     if (depth === 0) {
-      lines.push(`${indent}// ${kindName} ${node.signature}${lineInfo}`);
+      lines.push(`${indent}// ${kindName} ${node.signature}${lineInfo}${docSuffix}`);
     } else {
-      lines.push(`${indent}// ${node.signature}${lineInfo}`);
+      lines.push(`${indent}// ${node.signature}${lineInfo}${docSuffix}`);
     }
 
     // For basic detail level, skip members
@@ -233,15 +234,17 @@ export class ASTExtractor extends OutlineExtractor {
         const memberLineInfo = this.getLineInfo(member.range, document);
         const memberKind = this.getSymbolKindName(member.kind);
         const visibility = this.getVisibility(member.name);
+        const memberDocSuffix = this.getDocSuffix(document, member.range.start.line);
 
         if (visibility) {
-          lines.push(`${memberIndent}// ${visibility} ${memberKind} ${member.name}${memberLineInfo}`);
+          lines.push(`${memberIndent}// ${visibility} ${memberKind} ${member.name}${memberLineInfo}${memberDocSuffix}`);
         } else {
-          lines.push(`${memberIndent}// ${memberKind} ${member.name}${memberLineInfo}`);
+          lines.push(`${memberIndent}// ${memberKind} ${member.name}${memberLineInfo}${memberDocSuffix}`);
         }
       } else {
         // Standard detail - just list members
-        lines.push(`${memberIndent}// ${member.name}`);
+        const memberDocSuffix = this.getDocSuffix(document, member.range.start.line);
+        lines.push(`${memberIndent}// ${member.name}${memberDocSuffix}`);
       }
     }
 
@@ -275,7 +278,8 @@ export class ASTExtractor extends OutlineExtractor {
       } else {
         const lineInfo = this.getLineInfo(fn.range, document);
         const async = fn.name.includes('async') ? 'async ' : '';
-        lines.push(`// ${async}${fn.signature}${lineInfo}`);
+        const docSuffix = this.getDocSuffix(document, fn.range.start.line);
+        lines.push(`// ${async}${fn.signature}${lineInfo}${docSuffix}`);
       }
     }
 
@@ -316,6 +320,15 @@ export class ASTExtractor extends OutlineExtractor {
       return ` → ${signature}`;
     }
     return ` [L${line + 1}]`;
+  }
+
+  private getDocSuffix(document: vscode.TextDocument, startLine: number): string {
+    if (!this.options.extractComments) {
+      return '';
+    }
+
+    const doc = this.extractLeadingComment(document, startLine);
+    return doc ? ` [doc: ${doc}]` : '';
   }
 
   /**
@@ -369,3 +382,6 @@ export class ASTExtractor extends OutlineExtractor {
     return names[kind] || 'unknown';
   }
 }
+
+// Backwards-compatible export for existing tests/imports.
+export { LspOutlineExtractor as ASTExtractor };

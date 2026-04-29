@@ -88,11 +88,16 @@ export class GenericAnalyzer {
     output += `// Average line length: ${Math.round(avgLineLength)} chars\n\n`;
 
     output += `${SECTION_SEPARATOR}\n`;
-    output += `// PREVIEW (first ${Math.min(10, nonEmptyLines.length)} lines)\n`;
+    output += `// PREVIEW (up to ${this.config.textPreviewLength} chars)\n`;
     output += `${SECTION_SEPARATOR}\n`;
 
-    for (const line of nonEmptyLines.slice(0, 10)) {
-      output += `// ${line.substring(0, 150)}\n`;
+    let remaining = Math.max(1, this.config.textPreviewLength);
+    for (const line of nonEmptyLines) {
+      if (remaining <= 0) break;
+
+      const preview = line.substring(0, remaining);
+      output += `// ${preview}${line.length > remaining ? '...' : ''}\n`;
+      remaining -= preview.length;
     }
 
     return output;

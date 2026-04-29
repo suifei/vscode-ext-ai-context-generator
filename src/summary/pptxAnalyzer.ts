@@ -50,13 +50,14 @@ export class PptxAnalyzer {
       const totalText = cleanedText.length;
 
       // Check if file exceeds size threshold AND compression is enabled
-      const shouldCompress = fileResult.size > this.config.maxFileSize && this.config.enableLargeFileDegradation;
+      const maxFileSize = Math.max(1, Math.floor(this.config.maxFileSize || 1));
+      const shouldCompress = fileResult.size > maxFileSize && this.config.enableLargeFileDegradation;
 
       let output = `// File: ${relativePath} (${WARNING_EMOJI} PowerPoint summary)\n`;
       output += `// Slides: ${totalSlides} | Total text: ~${totalText} chars\n`;
 
       if (shouldCompress) {
-        output += `// Compressed: Yes (exceeds ${this.config.textPreviewLength} chars threshold)\n`;
+        output += `// Compressed: Yes (exceeds ${maxFileSize} bytes threshold)\n`;
       } else {
         output += `// Compressed: No\n`;
       }
@@ -202,7 +203,8 @@ export class PptxAnalyzer {
     output += `${SECTION_SEPARATOR}\n`;
 
     // Use smart summarization for the entire presentation
-    const summaryLength = Math.min(this.config.textPreviewLength * 2, fullText.length);
+    const previewLength = Math.max(1, Math.floor(this.config.textPreviewLength || 1));
+    const summaryLength = Math.min(previewLength * 2, fullText.length);
     const summary = summarizeText(fullText, summaryLength, 3);
 
     output += `// [Presentation Summary]\n`;

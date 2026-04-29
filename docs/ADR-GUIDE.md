@@ -25,12 +25,12 @@ function normalizeUris(
 
 ### ADR-02: 大文件三级降级策略
 
-**决策**: AST DocumentSymbol → Basic SymbolInformation → Regex
+**决策**: LSP DocumentSymbol → Basic SymbolInformation → Regex
 
 ```typescript
 // registry.ts
 if (SUPPORTED_LANGUAGES.has(languageId)) {
-  result = await astExtractor.extract();
+  result = await lspOutlineExtractor.extract();
 }
 if (!isValidOutline(result)) {
   result = await basicExtractor.extract();
@@ -236,15 +236,17 @@ private loadPatterns(additionalPatterns: string[]): void {
 
 ## 边界陷阱
 
-| 场景 | 防御 |
-|------|------|
-| LSP 不可用 | 三级降级至 Regex |
-| 文件读取失败 | `safeReadFile()` 捕获返回占位符 |
-| 无工作区 | `workspaceFolders?.[0]` 空值检查 |
-| 模板变量缺失 | `value || ''` 空字符串替换 |
-| 目录访问失败 | try-catch 跳过，`skipped++` |
-| 大文件解析失败 | Fallback 到 SmartSummarizer |
-| Tiktoken 加载失败 | 自动降级到 simple 模式 |
+
+| 场景            | 防御                           |
+| ------------- | ---------------------------- |
+| LSP 不可用       | 三级降级至 Regex                  |
+| 文件读取失败        | `safeReadFile()` 捕获返回占位符     |
+| 无工作区          | `workspaceFolders?.[0]` 空值检查 |
+| 模板变量缺失        | `value                       |
+| 目录访问失败        | try-catch 跳过，`skipped++`     |
+| 大文件解析失败       | Fallback 到 SmartSummarizer   |
+| Tiktoken 加载失败 | 自动降级到 simple 模式              |
+
 
 ---
 
@@ -300,7 +302,7 @@ private loadPatterns(additionalPatterns: string[]): void {
 
 **现状**: RegexFallback 对 2MB 单行文件可能回溯阻塞
 
-**缓解**: 大文件优先使用 AST，Regex 作为最后降级
+**缓解**: 大文件优先使用 LSP/符号大纲，Regex 作为最后降级
 
 ---
 

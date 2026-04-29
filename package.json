@@ -138,26 +138,31 @@
         "aiContext.maxFileSize": {
           "type": "number",
           "default": 51200,
+          "minimum": 1,
           "description": "%configuration.maxFileSize.description%"
         },
         "aiContext.maxTokens": {
           "type": "number",
           "default": 128000,
+          "minimum": 1,
           "description": "%configuration.maxTokens.description%"
         },
         "aiContext.textPreviewLength": {
           "type": "number",
           "default": 300,
+          "minimum": 1,
           "description": "%configuration.textPreviewLength.description%"
         },
         "aiContext.logSampleLines": {
           "type": "number",
           "default": 5,
+          "minimum": 0,
           "description": "%configuration.logSampleLines.description%"
         },
         "aiContext.csvSampleRows": {
           "type": "number",
           "default": 3,
+          "minimum": 0,
           "description": "%configuration.csvSampleRows.description%"
         },
         "aiContext.defaultTemplate": {
@@ -255,6 +260,7 @@
         "aiContext.parallelFileReads": {
           "type": "number",
           "default": 50,
+          "minimum": 1,
           "description": "%configuration.parallelFileReads.description%"
         },
         "aiContext.logLevel": {
@@ -323,6 +329,8 @@
     "test": "npm run compile && npm run compile:tests && npm run test:unit",
     "test:unit": "mocha out/test/test/unit/**/*.test.js",
     "test:coverage": "nyc mocha out/test/test/unit/**/*.test.js",
+    "semantic:samples": "tsc -p tsconfig.json && node scripts/runSemanticSamples.cjs",
+    "semantic:eval": "tsc -p tsconfig.json && node scripts/generateSemanticEvalReport.cjs",
     "package": "npm run compile && vsce package",
     "publish": "npm run package && vsce publish"
   },

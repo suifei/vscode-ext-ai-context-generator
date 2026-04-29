@@ -56,7 +56,8 @@ export class FileReader {
   readFile(filePath: string): FileReadResult {
     const stats = fs.statSync(filePath);
     const size = stats.size;
-    const exceedsThreshold = size > this.config.maxFileSize;
+    const maxFileSize = Math.max(1, Math.floor(this.config.maxFileSize || 1));
+    const exceedsThreshold = size > maxFileSize;
     const isBinary = this.isBinaryFile(filePath);
 
     // Only set isTruncated if large file degradation is enabled
@@ -89,7 +90,7 @@ export class FileReader {
    * Read multiple files in parallel
    */
   async readFiles(filePaths: string[]): Promise<FileReadResult[]> {
-    const concurrency = this.config.parallelFileReads;
+    const concurrency = Math.max(1, Math.floor(this.config.parallelFileReads || 1));
     const results: FileReadResult[] = [];
 
     for (let i = 0; i < filePaths.length; i += concurrency) {
@@ -146,9 +147,12 @@ export class FileReader {
       return false;
     }
 
-    // Check against configured binary patterns
-    for (const pattern of this.config.binaryFilePatterns) {
-      if (pattern === '*.' + ext || pattern === ext) {
+    // Check against configured binary patterns. Common values are "*.png" or ".png".
+    const fileName = path.basename(filePath).toLowerCase();
+    const relativePath = getRelativePath(this.workspaceRoot, filePath).replace(/\\/g, '/').toLowerCase();
+    for (const rawPattern of this.config.binaryFilePatterns) {
+      const pattern = rawPattern.replace(/\\/g, '/').toLowerCase();
+      if (this.matchesBinaryPattern(fileName, relativePath, ext, pattern)) {
         return true;
       }
     }
@@ -159,6 +163,17 @@ export class FileReader {
     }
 
     return false;
+  }
+
+  private matchesBinaryPattern(fileName: string, relativePath: string, ext: string, pattern: string): boolean {
+    if (!pattern) return false;
+    if (pattern === ext) return true;
+    if (pattern === `*${ext}` || pattern === `*.${ext.slice(1)}`) return true;
+    if (!pattern.includes('*')) return fileName === pattern || relativePath === pattern;
+
+    const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+    const regex = new RegExp(`^${escaped}$`);
+    return regex.test(fileName) || regex.test(relativePath);
   }
 
   /**
@@ -191,7 +206,7 @@ export class FileReader {
    */
   formatFileContent(result: FileReadResult): string {
     const relativePath = getRelativePath(this.workspaceRoot, result.path);
-    const language = result.language || 'text';
+    const language = this.config.autoDetectLanguage ? (result.language || 'text') : 'text';
 
     if (result.isBinary && result.metadata) {
       return this.formatBinaryMetadata(relativePath, result.metadata);
@@ -199,7 +214,8 @@ export class FileReader {
 
     let output = `// File: ${relativePath}`;
     if (result.isTruncated) {
-      output += ` (${WARNING_EMOJI} ${formatFileSize(result.size)}, exceeds ${formatFileSize(this.config.maxFileSize)} threshold)\n`;
+      const maxFileSize = Math.max(1, Math.floor(this.config.maxFileSize || 1));
+      output += ` (${WARNING_EMOJI} ${formatFileSize(result.size)}, exceeds ${formatFileSize(maxFileSize)} threshold)\n`;
     } else {
       output += ` (${formatFileSize(result.size)})\n`;
     }

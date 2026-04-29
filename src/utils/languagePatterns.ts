@@ -13,17 +13,18 @@ const PATTERNS: Record<string, LanguagePatterns> = {
   typescript: {
     type: [/^(?:export\s+)?(?:interface|type|class|enum)\s+\w+/],
     function: [
-      /^(?:async\s+)?function\s+\w+/,
-      /^(?:const|let|var)\s+\w+\s*=\s*(?:async\s+)?(?:\([^)]*\)|\w+)\s*=>/,
-      /^\w+\s*\([^)]*\)\s*[:{]/,
+      /^(?:export\s+)?(?:async\s+)?function\s+\w+/,
+      /^(?:export\s+)?(?:const|let|var)\s+\w+\s*=\s*(?:async\s+)?(?:\([^)]*\)|\w+)\s*=>/,
+      /^(?!(?:if|for|while|switch|catch|return)\b)(?:(?:public|private|protected|static|async|override|readonly)\s+)*(?:get\s+|set\s+)?[A-Za-z_$][\w$]*\s*\([^)]*\)\s*(?::[^{]+)?\s*\{/,
     ],
     import: [/^import\s+.*from\s+['"`].+['"`]/, /^require\s*\(['"`].+['"`]\)/],
   },
   javascript: {
     type: [/^(?:export\s+)?(?:class|interface)\s+\w+/],
     function: [
-      /^(?:async\s+)?function\s+\w+/,
-      /^(?:const|let|var)\s+\w+\s*=\s*(?:async\s+)?(?:\([^)]*\)|\w+)\s*=>/,
+      /^(?:export\s+)?(?:async\s+)?function\s+\w+/,
+      /^(?:export\s+)?(?:const|let|var)\s+\w+\s*=\s*(?:async\s+)?(?:\([^)]*\)|\w+)\s*=>/,
+      /^(?!(?:if|for|while|switch|catch|return)\b)(?:(?:static|async)\s+)*(?:get\s+|set\s+)?[A-Za-z_$][\w$]*\s*\([^)]*\)\s*(?::[^{]+)?\s*\{/,
     ],
     import: [/^import\s+.*from\s+['"`].+['"`]/, /^require\s*\(['"`].+['"`]\)/],
   },

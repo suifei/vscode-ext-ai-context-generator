@@ -135,7 +135,7 @@ export class CsvAnalyzer {
 
     output += '\n';
 
-    const sampleRows = Math.min(this.config.csvSampleRows, dataRows.length);
+    const sampleRows = Math.min(Math.max(0, Math.floor(this.config.csvSampleRows || 0)), dataRows.length);
     output += `${SECTION_SEPARATOR}\n`;
     output += `// SAMPLE DATA (first ${sampleRows} rows)\n`;
     output += `${SECTION_SEPARATOR}\n`;

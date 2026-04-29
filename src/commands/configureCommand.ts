@@ -11,6 +11,7 @@ interface ConfigOption {
   configKey: string;
   successMessage: string;
   prompt: string;
+  minimum: number;
 }
 
 export async function configureSettings(): Promise<void> {
@@ -22,6 +23,7 @@ export async function configureSettings(): Promise<void> {
       configKey: 'maxFileSize',
       successMessage: 'Maximum file size set to',
       prompt: 'Enter maximum file size in bytes',
+      minimum: 1,
     },
     {
       label: 'Token Limit',
@@ -30,6 +32,7 @@ export async function configureSettings(): Promise<void> {
       configKey: 'maxTokens',
       successMessage: 'Token limit set to',
       prompt: 'Enter token warning threshold',
+      minimum: 1,
     },
   ];
 
@@ -70,8 +73,8 @@ async function configureNumericSetting(option: ConfigOption): Promise<void> {
     value: current.toString(),
     validateInput: input => {
       const num = parseInt(input);
-      if (isNaN(num) || num < 0) {
-        return 'Please enter a valid number';
+      if (isNaN(num) || num < option.minimum) {
+        return `Please enter a number greater than or equal to ${option.minimum}`;
       }
       return null;
     },

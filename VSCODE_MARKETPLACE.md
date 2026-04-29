@@ -12,7 +12,7 @@ Generate structured Markdown context from your project files for AI assistant in
 
 ### Intelligent Content Processing
 - **Code files**: Full content with syntax highlighting
-- **Large files** (>50KB): AST-based structure outline for TypeScript, Python, Go, Rust, Java, C/C++
+- **Large files** (>50KB): TypeScript/JavaScript use Compiler API **function-level semantic summaries** first; other languages use LSP/symbol structure outline (Python, Go, Rust, Java, C/C++)
 - **Log files**: Level distribution and error pattern sampling
 - **CSV/TSV files**: Schema inference and data sampling
 - **Config files** (JSON/YAML): Structure skeleton with sensitive data redaction (passwords, tokens, API keys)
@@ -67,6 +67,7 @@ build/**
 | `aiContext.showTreeEmoji` | boolean | true | Show emoji in directory tree |
 | `aiContext.sensitiveKeyPatterns` | array | [...] | Patterns for detecting sensitive keys (auto-filtered for security) |
 | `aiContext.ignorePatterns` | array | [...] | Additional ignore patterns |
+| `aiContext.binaryFilePatterns` | array | [...] | Binary metadata summary patterns |
 
 ## Use Cases
 
@@ -132,7 +133,7 @@ export const formatDate = (date: Date): string => { ... }
 
 ### 智能内容处理
 - **代码文件**：语法高亮显示完整内容
-- **大文件**（>50KB）：基于 AST 的结构大纲（支持 TS、Python、Go、Rust、Java、C/C++）
+- **大文件**（>50KB）：TS/JS 优先使用 Compiler API 的**函数级语义摘要**；其余语言使用 LSP/符号结构大纲（Python、Go、Rust、Java、C/C++）
 - **日志文件**：级别分布和错误模式采样
 - **CSV/TSV 文件**：模式推断和数据采样
 - **配置文件**（JSON/YAML）：结构骨架及敏感数据脱敏
@@ -177,6 +178,7 @@ build/**
 | `aiContext.showTreeEmoji` | boolean | true | 在目录树中显示 emoji |
 | `aiContext.sensitiveKeyPatterns` | array | [...] | 检测敏感键的模式（为安全自动过滤） |
 | `aiContext.ignorePatterns` | array | [...] | 额外的忽略模式 |
+| `aiContext.binaryFilePatterns` | array | [...] | 二进制元数据摘要模式 |
 
 ## 隐私
 

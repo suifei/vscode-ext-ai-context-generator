@@ -93,11 +93,12 @@ export class DocAnalyzer {
   }
 
   private getFirstParagraph(lines: string[]): string | null {
+    const maxLength = Math.max(1, this.config.textPreviewLength);
     for (const line of lines) {
       const trimmed = line.trim();
       if (trimmed && !trimmed.startsWith('#') && !trimmed.startsWith('```') && !trimmed.startsWith('>')) {
-        const text = trimmed.substring(0, 200);
-        return text.length === 200 ? text + '...' : text;
+        const text = trimmed.substring(0, maxLength);
+        return trimmed.length > maxLength ? text + '...' : text;
       }
     }
     return null;

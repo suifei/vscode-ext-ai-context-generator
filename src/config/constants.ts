@@ -19,6 +19,7 @@ export interface AIContextConfig {
   showTreeEmoji: boolean;
   tokenEstimation: 'tiktoken' | 'simple';
   parallelFileReads: number;
+  logLevel: 'debug' | 'info' | 'warn' | 'error';
   // Outline extraction settings
   outlineDetail: OutlineDetail;
   outlineIncludePrivate: boolean;
@@ -43,6 +44,7 @@ export const DEFAULT_CONFIG: AIContextConfig = {
   showTreeEmoji: true,
   tokenEstimation: 'tiktoken',
   parallelFileReads: 50,
+  logLevel: 'info',
   // Outline extraction defaults
   outlineDetail: 'standard',
   outlineIncludePrivate: false,

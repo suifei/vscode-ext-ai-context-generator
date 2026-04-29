@@ -210,7 +210,7 @@ export class ExcelAnalyzer {
 
     // Sample data
     if (sheet.rows > 0) {
-      const sampleRows = Math.min(this.config.csvSampleRows, sheet.rows);
+      const sampleRows = Math.min(Math.max(0, Math.floor(this.config.csvSampleRows || 0)), sheet.rows);
       output += `${SECTION_SEPARATOR}\n`;
       output += `// SAMPLE DATA (showing ${sampleRows} of ${sheet.rows} rows)\n`;
       output += `${SECTION_SEPARATOR}\n`;

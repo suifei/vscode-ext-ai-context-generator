@@ -18,7 +18,7 @@ A VSCode extension that generates structured Markdown context from project files
 - **Smart Filtering**: `.aicontextignore` support (auto-merges `.gitignore`)
 - **Intelligent Processing**:
   - Code files: Full content with syntax highlighting
-  - Large files (>50KB): AST-based outline (TS/Py/Go/Rust/Java/C++)
+  - Large files (>50KB): TS/JS function-level semantic summary (Compiler API), then LSP/symbol outline for other languages (Py/Go/Rust/Java/C++)
   - Logs/CSV/Config: Smart summaries
   - **Office Documents**: Text extraction with smart summarization (PDF/Word/Excel/PowerPoint)
   - Binary: Metadata extraction
@@ -61,7 +61,7 @@ dist/**
 |---------|---------|-------------|
 | `maxFileSize` | 51200 | File size threshold for outline mode (bytes) |
 | `maxTokens` | 128000 | Token warning threshold (local counting, no AI API) |
-| `enableLargeFileDegradation` | true | Enable large file outline/summary mode |
+| `enableLargeFileDegradation` | true | Enable size-based large file outline/summary mode |
 
 ### Template Variables
 
@@ -84,7 +84,7 @@ The extension uses a **layered processing architecture** that automatically sele
 | File Type | Processing Method | Output |
 |-----------|------------------|--------|
 | Small code files (≤50KB) | Full read | Source code + syntax highlighting |
-| Large code files (>50KB) | AST outline extraction | Type definitions, function signatures, call relations |
+| Large code files (>50KB) | TS/JS: semantic compressed outline (inputs/returns/flow/calls); others: LSP/symbol outline | Behavior-oriented summary or types, signatures, call relations |
 | Log files (.log) | Pattern analysis | Log level distribution, error patterns, time range |
 | Data files (.csv/.tsv) | Structure inference | Field types, sample data, statistics |
 | Config files (JSON/YAML) | Smart summarization | Structure skeleton, sensitive data redaction |
@@ -95,21 +95,23 @@ The extension uses a **layered processing architecture** that automatically sele
 | **PowerPoint (.pptx)** | Slide text extraction | Slide titles, content summary |
 | Binary files | Metadata extraction | Format info, dimensions/duration, etc. |
 
-### 🏗️ AST Outline Extraction Algorithm
+### 🏗️ Large-code outline pipeline
 
-For large code files, the extension uses **LSP-based AST outline extraction**:
+For large code files, extraction order depends on language:
 
-```
-1. Leverage VSCode's DocumentSymbol API to obtain symbol tree
-2. Build hierarchical structure: Class → Method → Property
-3. Extract function signatures and call relationships (→ calls: notation)
-4. Supported languages: TS/JS, Python, Go, Rust, Java, C/C++
-```
+**TypeScript / JavaScript**
+1. **TypeScript Compiler API** — function-level semantic summary (inputs, returns, 3–8 flow steps, calls; optional side effects/branches in `detailed`)
+2. **DocumentSymbol** — hierarchical symbol tree if semantic step is insufficient
+3. **SymbolInformation** — flat symbols
+4. **Regex** — last resort
+
+**Other languages (Python, Go, Rust, Java, C/C++, …)**
+1. **DocumentSymbol** → **SymbolInformation** → **Regex**
 
 **Benefits**:
-- Generates concise structural outlines even for files with tens of thousands of lines
-- Preserves complete type information and function signatures
-- Significantly reduces token consumption (typically 90%+ compression)
+- TS/JS prioritizes **behavior-oriented** context over raw symbol dumps when possible
+- Other languages still get concise structural outlines via LSP
+- Significantly reduces token consumption versus full file content (typically 90%+ compression)
 
 ### 📊 Smart Summary Engine
 
@@ -133,7 +135,7 @@ For non-code files, the extension has **dedicated analyzers**:
 ### ⚡ Performance Optimization Design
 
 - **Parallel File Reading**: Batch concurrent file reading (default 50 concurrent)
-- **LRU Cache**: AST outline extraction results cached (5min TTL, max 100 entries)
+- **LRU Cache**: Outline extraction results (semantic + LSP + regex) cached (5min TTL, max 100 entries)
 - **Incremental Filtering**: Intelligently merges `.gitignore` and `.aicontextignore` rules
 - **Lazy Evaluation**: LSP services only invoked when needed
 
@@ -160,7 +162,7 @@ For non-code files, the extension has **dedicated analyzers**:
          ▼
 ┌─────────────────┐
 │  Classification  │
-│  ├─ Code Files   │  → Full content / AST outline
+│  ├─ Code Files   │  → Full content / semantic or symbol outline
 │  ├─ Config Files │  → Structure summary + redaction
 │  ├─ Logs/Data    │  → Smart analysis
 │  └─ Binary Files │  → Metadata extraction
@@ -196,7 +198,7 @@ VSCode 扩展，将项目代码转换为结构化 Markdown 上下文，用于 AI
 - **智能过滤**: 支持 `.aicontextignore`（自动合并 `.gitignore`）
 - **智能处理**:
   - 代码文件: 完整内容 + 语法高亮
-  - 大文件 (>50KB): AST 结构大纲（TS/Py/Go/Rust/Java/C++）
+  - 大文件 (>50KB): TS/JS 优先函数级语义摘要（Compiler API），其余语言 LSP/符号大纲（Py/Go/Rust/Java/C++）
   - 日志/CSV/配置: 智能摘要
   - **Office 文档**: 文本提取 + 智能摘要（PDF/Word/Excel/PowerPoint）
   - 二进制: 元数据提取
@@ -238,7 +240,7 @@ dist/**
 |------|--------|------|
 | `maxFileSize` | 51200 | 触发大纲模式的文件大小阈值（字节） |
 | `maxTokens` | 128000 | Token 警告阈值（本地计数，不调用 AI） |
-| `enableLargeFileDegradation` | true | 启用大文件大纲/摘要模式 |
+| `enableLargeFileDegradation` | true | 启用基于文件大小的大纲/摘要模式 |
 
 ### 模板变量
 
@@ -261,7 +263,7 @@ dist/**
 | 文件类型 | 处理方式 | 输出内容 |
 |---------|---------|----------|
 | 小型代码文件 (≤50KB) | 完整读取 | 源代码 + 语法高亮 |
-| 大型代码文件 (>50KB) | AST 大纲提取 | 类型定义、函数签名、调用关系 |
+| 大型代码文件 (>50KB) | TS/JS：语义压缩大纲（输入/返回/流程/调用）；其他：LSP/符号大纲 | 行为级摘要或类型、签名、调用关系 |
 | 日志文件 (.log) | 模式分析 | 日志级别分布、错误模式、时间范围 |
 | 数据文件 (.csv/.tsv) | 结构推断 | 字段类型、样本数据、统计信息 |
 | 配置文件 (JSON/YAML) | 智能摘要 | 结构骨架、敏感数据脱敏 |
@@ -272,21 +274,23 @@ dist/**
 | **PowerPoint (.pptx)** | 幻灯片文本提取 | 幻灯片标题、内容摘要 |
 | 二进制文件 | 元数据提取 | 格式信息、尺寸/时长等 |
 
-### 🏗️ AST 大纲提取算法
+### 🏗️ 大文件代码提取链路
 
-对于大型代码文件，插件使用**基于 LSP 的 AST 大纲提取**技术：
+大型代码文件的提取顺序因语言而异：
 
-```
-1. 利用 VSCode 的 DocumentSymbol API 获取符号树
-2. 构建层级结构：类 → 方法 → 属性
-3. 提取函数签名和调用关系 (→ calls: 符号)
-4. 支持语言：TS/JS、Python、Go、Rust、Java、C/C++
-```
+**TypeScript / JavaScript**
+1. **TypeScript Compiler API** — 函数级语义摘要（输入、返回、3–8 步流程、调用；`detailed` 下可含副作用/分支）
+2. **DocumentSymbol** — 层次符号树（语义阶段不足时）
+3. **SymbolInformation** — 扁平符号
+4. **正则** — 最后兜底
+
+**其他语言（Python、Go、Rust、Java、C/C++ 等）**
+1. **DocumentSymbol** → **SymbolInformation** → **正则**
 
 **优势**：
-- 即使数万行的文件也能生成简洁的结构大纲
-- 保留完整的类型信息和函数签名
-- 显著减少 Token 消耗（通常压缩 90%+）
+- TS/JS 在可行时优先输出**行为向**上下文，而非仅罗列符号
+- 其他语言仍通过 LSP 获得简洁结构大纲
+- 相对全文显著降低 Token（通常压缩 90%+）
 
 ### 📊 智能摘要引擎
 
@@ -310,7 +314,7 @@ dist/**
 ### ⚡ 性能优化设计
 
 - **并行文件读取**：批量并发读取文件（默认 50 并发）
-- **LRU 缓存**：AST 大纲提取结果缓存（5分钟 TTL，最多100条）
+- **LRU 缓存**：大纲提取结果（语义+LSP+正则）缓存（5分钟 TTL，最多100条）
 - **增量过滤**：智能合并 `.gitignore` 和 `.aicontextignore` 规则
 - **惰性求值**：仅在需要时调用 LSP 服务
 
@@ -337,7 +341,7 @@ dist/**
          ▼
 ┌─────────────────┐
 │  分类处理        │
-│  ├─ 代码文件     │  → 完整内容 / AST大纲
+│  ├─ 代码文件     │  → 完整内容 / 语义或符号大纲
 │  ├─ 配置文件     │  → 结构摘要 + 脱敏
 │  ├─ 日志/数据    │  → 智能分析
 │  └─ 二进制文件   │  → 元数据提取

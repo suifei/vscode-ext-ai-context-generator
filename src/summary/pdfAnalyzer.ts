@@ -51,13 +51,14 @@ export class PdfAnalyzer {
       const totalPages = pdfData.numpages;
 
       // Check if file exceeds size threshold AND compression is enabled
-      const shouldCompress = fileResult.size > this.config.maxFileSize && this.config.enableLargeFileDegradation;
+      const maxFileSize = Math.max(1, Math.floor(this.config.maxFileSize || 1));
+      const shouldCompress = fileResult.size > maxFileSize && this.config.enableLargeFileDegradation;
 
       let output = `// File: ${relativePath} (${WARNING_EMOJI} PDF structure)\n`;
       output += `// Pages: ${totalPages} | Total text: ~${textLength} chars\n`;
 
       if (shouldCompress) {
-        output += `// Compressed: Yes (exceeds ${this.config.textPreviewLength} chars threshold)\n`;
+        output += `// Compressed: Yes (exceeds ${maxFileSize} bytes threshold)\n`;
       } else {
         output += `// Compressed: No\n`;
       }
@@ -155,7 +156,8 @@ export class PdfAnalyzer {
     output += `${SECTION_SEPARATOR}\n`;
 
     // Use smart summarization for the entire document
-    const summaryLength = Math.min(this.config.textPreviewLength * 2, fullText.length);
+    const previewLength = Math.max(1, Math.floor(this.config.textPreviewLength || 1));
+    const summaryLength = Math.min(previewLength * 2, fullText.length);
     const summary = summarizeText(fullText, summaryLength, 3);
 
     output += `// [Document Summary]\n`;

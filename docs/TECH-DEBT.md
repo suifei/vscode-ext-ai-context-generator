@@ -29,7 +29,7 @@
 
 **位置**: `outline/registry.ts:extractOutline()`
 
-**现状**: AST → Basic → Regex 每次失败后重新解析
+**现状**: LSP DocumentSymbol → Basic SymbolInformation → Regex 每次失败后重新解析
 
 **缓解**: LRU 缓存（TTL 5min，容量 100）
 

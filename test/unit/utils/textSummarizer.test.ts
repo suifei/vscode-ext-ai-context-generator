@@ -136,7 +136,7 @@ describe('textSummarizer', () => {
 AI Context Generator is a VSCode extension that generates structured Markdown context from project files.
 It supports smart filtering with .aicontextignore files. The extension can process various file types intelligently.
 For small code files under 50KB, it provides full content with syntax highlighting.
-Large files over 50KB are processed using AST-based outline extraction.
+Large files over 50KB use function-level semantic summaries for TypeScript/JavaScript and LSP/symbol outlines for other languages.
 This method preserves type definitions and function signatures while significantly reducing token consumption.
 The extension also includes dedicated analyzers for logs, CSV files, and configuration files.
 Log analyzers can identify log level distributions and detect error patterns.
@@ -186,7 +186,7 @@ Custom templates can be created using variables like $PROJECT_NAME and $FILE_CON
 AI 上下文生成器是一个 VSCode 扩展，可以将项目代码转换为结构化的 Markdown 上下文。
 它支持使用 .aicontextignore 文件进行智能过滤。该扩展可以智能处理各种文件类型。
 对于小于 50KB 的小型代码文件，它提供带有语法高亮的完整内容。
-超过 50KB 的大文件使用基于 AST 的大纲提取方法处理。
+超过 50KB 时，TypeScript/JavaScript 使用函数级语义摘要，其他语言使用 LSP/符号大纲。
 这种方法保留了类型定义和函数签名，同时显著减少了 Token 消耗。
 该扩展还包括用于日志、CSV 文件和配置文件的专用分析器。
 日志分析器可以识别日志级别分布并检测错误模式。
@@ -234,8 +234,8 @@ AI Context Generator (Advanced) is a powerful VSCode extension for generating st
 VSCode 扩展 AI 上下文生成器（高级版）可以将项目代码转换为结构化 Markdown 上下文。
 It features intelligent file filtering using .aicontextignore patterns.
 支持使用 .aicontextignore 模式进行智能文件过滤。
-The extension processes code files with syntax highlighting and extracts AST outlines for large files.
-该扩展处理代码文件时提供语法高亮，并为大文件提取 AST 大纲。
+The extension processes code files with syntax highlighting; large files get semantic or LSP-based outlines.
+该扩展处理代码文件时提供语法高亮；大文件则使用语义或 LSP 大纲。
 All processing is done locally with no network requests or API calls.
 所有处理都在本地完成，无需网络请求或 API 调用。
 `;
@@ -263,7 +263,7 @@ All processing is done locally with no network requests or API calls.
 AI Context Generator is a VSCode extension for generating structured Markdown context.
 It supports smart filtering and intelligent file processing.
 The extension can handle various file types including code, logs, and configuration files.
-For large files, it uses AST-based outline extraction to reduce token consumption.
+For large files, it uses semantic or LSP outline extraction to reduce token consumption.
 All processing is done locally without any network requests.
 This ensures privacy and gives users control over their code.
 Custom templates support variables like $PROJECT_NAME.
@@ -308,7 +308,7 @@ Right-click any file/folder to generate to clipboard, file, or preview.
 
 Features include smart filtering with .aicontextignore support. Intelligent processing for code files, large files, logs, CSV, config, and binary files.
 
-For small code files, it provides full content with syntax highlighting. Large files over 50KB use AST-based outline extraction.
+For small code files, it provides full content with syntax highlighting. Large files over 50KB use TS/JS semantic summaries or LSP/symbol outlines.
 
 The extension supports output to clipboard, file, or preview tab. Token counting uses Tiktoken for accuracy or simple estimation.
 
@@ -316,7 +316,7 @@ Custom templates can be created with variables like $PROJECT_NAME, $DIR_TREE, $F
 
 The layered processing architecture automatically selects optimal processing based on file type and size.
 
-For large code files, LSP-based AST outline extraction generates concise structural outlines even for files with tens of thousands of lines.
+For large code files, TS/JS semantic compression and LSP-based outlines keep context concise even for files with tens of thousands of lines.
 
 This preserves complete type information and function signatures while significantly reducing token consumption, typically achieving 90%+ compression.
 
@@ -386,7 +386,7 @@ VSCode 扩展，将项目代码转换为结构化 Markdown 上下文，用于 AI
 
 功能特性包括智能过滤，支持 .aicontextignore。智能处理代码文件、大文件、日志、CSV、配置和二进制文件。
 
-对于小型代码文件，提供完整内容和语法高亮。超过 50KB 的大文件使用 AST 结构大纲提取。
+对于小型代码文件，提供完整内容和语法高亮。超过 50KB 时，TypeScript/JavaScript 优先使用 Compiler API 的函数级语义摘要，其他语言使用 LSP/符号大纲。
 
 扩展支持输出到剪贴板、文件或预览标签页。Token 计数使用 Tiktoken 精确计数或简单估算。
 
@@ -394,7 +394,7 @@ VSCode 扩展，将项目代码转换为结构化 Markdown 上下文，用于 AI
 
 分层处理架构根据文件类型和大小自动选择最优处理方案。
 
-对于大型代码文件，基于 LSP 的 AST 大纲提取即使对数万行的文件也能生成简洁的结构大纲。
+对于大型 TypeScript/JavaScript 文件，语义压缩大纲在优先保留行为信息的同时降低 Token；其他语言仍通过 LSP 获得简洁结构大纲。
 
 这保留了完整的类型信息和函数签名，同时显著减少 Token 消耗，通常实现 90% 以上的压缩率。
 

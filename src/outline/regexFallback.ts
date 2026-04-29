@@ -30,7 +30,8 @@ export class RegexFallback extends OutlineExtractor {
     const functions: string[] = [];
     const imports: string[] = [];
 
-    for (const line of lines) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
       const trimmed = line.trim();
 
       // Skip empty lines
@@ -59,7 +60,7 @@ export class RegexFallback extends OutlineExtractor {
       // Check for type patterns
       for (const pattern of patterns.type) {
         if (pattern.test(trimmed)) {
-          types.push(truncateText(trimmed, 100));
+          types.push(this.formatLineWithDoc(trimmed, document, i, 100));
           break;
         }
       }
@@ -67,7 +68,7 @@ export class RegexFallback extends OutlineExtractor {
       // Check for function patterns
       for (const pattern of patterns.function) {
         if (pattern.test(trimmed)) {
-          functions.push(truncateText(trimmed, 120));
+          functions.push(this.formatLineWithDoc(trimmed, document, i, 120));
           break;
         }
       }
@@ -152,5 +153,16 @@ export class RegexFallback extends OutlineExtractor {
     if (privatePattern.test(trimmed)) return true;
 
     return false;
+  }
+
+  private formatLineWithDoc(line: string, document: vscode.TextDocument, lineNumber: number, maxLength: number): string {
+    const signature = truncateText(line, maxLength);
+    const lineInfo = this.options.detail === 'detailed' ? ` [L${lineNumber + 1}]` : '';
+    if (!this.options.extractComments) {
+      return `${signature}${lineInfo}`;
+    }
+
+    const doc = this.extractLeadingComment(document, lineNumber);
+    return doc ? `${signature}${lineInfo} [doc: ${doc}]` : `${signature}${lineInfo}`;
   }
 }

@@ -155,10 +155,94 @@ export class OutlineExtractor {
     }
 
     const signature = truncateText(extractCodeSignature(line), 150);
+    const doc = this.options.extractComments ? this.extractLeadingComment(document, range.start.line) : '';
+    const docSuffix = doc ? ` [doc: ${doc}]` : '';
     if (this.options.detail === 'detailed') {
-      return `${symbol.name} → ${signature}`;
+      return `${symbol.name} → ${signature}${docSuffix}`;
     }
-    return signature || symbol.name;
+    return `${signature || symbol.name}${docSuffix}`;
+  }
+
+  protected extractLeadingComment(document: vscode.TextDocument, startLine: number): string {
+    const comments: string[] = [];
+    const lines = this.getDocumentLines(document);
+
+    for (let lineNumber = startLine - 1; lineNumber >= 0; lineNumber--) {
+      const trimmed = (lines[lineNumber] || '').trim();
+
+      if (!trimmed) {
+        if (comments.length > 0) break;
+        continue;
+      }
+
+      const cleaned = this.cleanCommentLine(trimmed);
+      if (cleaned === null) {
+        break;
+      }
+
+      if (cleaned) {
+        comments.unshift(cleaned);
+      }
+      if (comments.join(' ').length > 160) break;
+    }
+
+    if (comments.length > 0) {
+      return truncateText(comments.join(' '), 160);
+    }
+
+    return this.extractFollowingDocString(document, startLine);
+  }
+
+  private extractFollowingDocString(document: vscode.TextDocument, startLine: number): string {
+    const parts: string[] = [];
+    const lines = this.getDocumentLines(document);
+
+    for (let lineNumber = startLine + 1; lineNumber < lines.length; lineNumber++) {
+      const trimmed = lines[lineNumber].trim();
+      if (!trimmed) continue;
+
+      const quote = trimmed.startsWith('"""') ? '"""' : trimmed.startsWith("'''") ? "'''" : '';
+      if (!quote) return '';
+
+      let content = trimmed.slice(quote.length);
+      const closesOnSameLine = content.endsWith(quote);
+      if (closesOnSameLine) {
+        content = content.slice(0, -quote.length);
+      }
+      if (content.trim()) {
+        parts.push(content.trim());
+      }
+
+      if (!closesOnSameLine) {
+        for (let docLine = lineNumber + 1; docLine < lines.length; docLine++) {
+          const docText = lines[docLine].trim();
+          if (docText.endsWith(quote)) {
+            const finalText = docText.slice(0, -quote.length).trim();
+            if (finalText) parts.push(finalText);
+            break;
+          }
+          if (docText) parts.push(docText);
+        }
+      }
+
+      return truncateText(parts.join(' '), 160);
+    }
+
+    return '';
+  }
+
+  private getDocumentLines(document: vscode.TextDocument): string[] {
+    return document.getText().split('\n');
+  }
+
+  private cleanCommentLine(line: string): string | null {
+    if (line.startsWith('///')) return line.replace(/^\/\/\/\s?/, '').trim();
+    if (line.startsWith('//')) return line.replace(/^\/\/\s?/, '').trim();
+    if (line.startsWith('#')) return line.replace(/^#\s?/, '').trim();
+    if (line.endsWith('*/')) return line.replace(/\*\/$/, '').trim();
+    if (line.startsWith('*')) return line.replace(/^\*\s?/, '').trim();
+    if (line.startsWith('/**') || line.startsWith('/*')) return line.replace(/^\/\*+\s?/, '').trim();
+    return null;
   }
 
   /**

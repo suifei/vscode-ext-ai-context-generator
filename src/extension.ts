@@ -15,20 +15,18 @@ export function activate(context: vscode.ExtensionContext): void {
   Logger.initialize();
 
   // Get log level from config
-  const config = vscode.workspace.getConfiguration('aiContext');
-  const logLevelConfig = config.get<string>('logLevel', 'info');
-
-  const levelMap: Record<string, LogLevel> = {
-    debug: LogLevel.DEBUG,
-    info: LogLevel.INFO,
-    warn: LogLevel.WARN,
-    error: LogLevel.ERROR,
-  };
-  Logger.setLevel(levelMap[logLevelConfig] ?? LogLevel.INFO);
+  const logLevelConfig = applyLogLevelFromSettings();
+  Logger.debug('Log level:', logLevelConfig);
 
   Logger.info('AI Context Generator is now active');
   Logger.debug('Extension path:', context.extensionUri.fsPath);
-  Logger.debug('Log level:', logLevelConfig);
+
+  const configWatcher = vscode.workspace.onDidChangeConfiguration(event => {
+    if (event.affectsConfiguration('aiContext.logLevel')) {
+      const updatedLogLevel = applyLogLevelFromSettings();
+      Logger.debug('Log level updated:', updatedLogLevel);
+    }
+  });
 
   // Register generate commands
   const generateClipboardCmd = vscode.commands.registerCommand(
@@ -74,6 +72,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Register all disposables
   context.subscriptions.push(
+    configWatcher,
     generateClipboardCmd,
     generateFileCmd,
     generatePreviewCmd,
@@ -86,6 +85,19 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Show welcome message on first activation
   showWelcomeMessage(context);
+}
+
+function applyLogLevelFromSettings(): string {
+  const config = vscode.workspace.getConfiguration('aiContext');
+  const logLevelConfig = config.get<string>('logLevel', 'info');
+  const levelMap: Record<string, LogLevel> = {
+    debug: LogLevel.DEBUG,
+    info: LogLevel.INFO,
+    warn: LogLevel.WARN,
+    error: LogLevel.ERROR,
+  };
+  Logger.setLevel(levelMap[logLevelConfig] ?? LogLevel.INFO);
+  return logLevelConfig;
 }
 
 /**
