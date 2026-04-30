@@ -51,10 +51,11 @@ function mockDoc(fsPath, languageId, text) {
 }
 
 const SAMPLES = [
-  ['src/core/contextGenerator.ts', 'typescript', 'standard', 28],
-  ['src/commands/generateCommand.ts', 'typescript', 'standard', 22],
-  ['src/outline/registry.ts', 'typescript', 'standard', 25],
-  ['src/core/ignoreFilter.ts', 'typescript', 'standard', 20],
+  ['dist/extension.js', 'javascript', 'standard', 999],
+  ['src/core/contextGenerator.ts', 'typescript', 'standard', 999],
+  ['src/commands/generateCommand.ts', 'typescript', 'standard', 999],
+  ['src/outline/registry.ts', 'typescript', 'standard', 999],
+  ['src/core/ignoreFilter.ts', 'typescript', 'standard', 999],
 ];
 
 function estimateTokens(chars) {

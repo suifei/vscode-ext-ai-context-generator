@@ -172,7 +172,7 @@ export class TypeScriptSemanticExtractor {
       }
     }
 
-    const maxFns = Math.min(Math.max(merged.maxItems, 1), 200);
+    const maxFns = Math.min(Math.max(merged.maxItems, 1), 2000);
     const filtered = collected.filter(f => this.shouldIncludeFunction(f.node, merged.includePrivate));
     const slice = filtered.slice(0, maxFns);
 
